@@ -4,6 +4,8 @@
 
 - The dashboard re-reads `fleet.json` when it changes — members added, removed or renamed, a session id recorded by `fleet spawn`, the window, the token limit, the board folder — without a restart; a file caught mid-write is skipped and the last good plan kept. The port is read only at start.
 - Members in worktrees: the protocol has a "Writing to the board from a worktree" section — the board is in the main checkout and not in git, so read and write it only by its absolute path, never create or commit board files in the worktree, write ticket paths relative to the repository root, and tell the lead when a write is refused. Briefs, agents and the protocol give absolute board paths for every grep, and the exact `fleet roster … --fleet <dir>` command to record a member's worktree and branch (`--fleet` may now come after the pairs).
+- `fleet status` reads a ticket's status as the dashboard does: `In progress` counts as `in-progress`, not `In`.
+- Status parsing: only the status word counts, so `duplicate → N-019`, `fixed — dev-api @ 7f3a` or `deferred to next sweep` no longer show up as unknown stages; `won't fix`, `on hold` and the like stay one status.
 
 ## 0.3.0 — 2026-11-01
 

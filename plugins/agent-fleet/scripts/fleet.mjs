@@ -21,6 +21,7 @@ import path from "node:path";
 import { launchPlan, writeAgents, writeBoard } from "./lib/board-init.mjs";
 import { estimateFleet } from "./lib/estimate.mjs";
 import { budgetState, catalog, modelId, normalizePlan, PLUGIN_ROOT, readFleet } from "./lib/plan.mjs";
+import { normStatus } from "./server/board.mjs";
 import { createTranscripts } from "./server/transcripts.mjs";
 
 const [command, ...args] = process.argv.slice(2);
@@ -225,7 +226,8 @@ switch (command) {
     const tickets = fs.existsSync(ticketsDir) ? fs.readdirSync(ticketsDir).filter((f) => f.endsWith(".md")) : [];
     const statuses = {};
     for (const file of tickets) {
-      const status = /^[ \t]*-[ \t]*Status:[ \t]*([a-z-]+)/im.exec(fs.readFileSync(path.join(ticketsDir, file), "utf8"))?.[1] ?? "new";
+      // Read as the dashboard reads it: "In progress" is in-progress, not "In".
+      const status = normStatus(/^[ \t]*-[ \t]*Status:[ \t]*(.*)$/im.exec(fs.readFileSync(path.join(ticketsDir, file), "utf8"))?.[1] ?? "");
       statuses[status] = (statuses[status] ?? 0) + 1;
     }
     const left = Math.max(0, Math.round((Date.parse(fleet.mission.endAt) - Date.now()) / 60_000));

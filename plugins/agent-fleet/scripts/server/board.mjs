@@ -10,10 +10,15 @@ function field(text, name) {
   return m ? m[1].trim() : "";
 }
 
-function normStatus(raw) {
-  let s = raw.trim().toLowerCase().replaceAll("_", "-").replaceAll(" ", "-");
-  s = s.split(/[([,;]/)[0].replace(/^[-`*]+|[-`*]+$/g, "");
-  return ALIASES[s] ?? (s || "new");
+/**
+ * A ticket's Status field as one flow id. Only the status word counts: "duplicate → N-019", "fixed — dev-api @ 7f3a"
+ * and "deferred to next sweep" read as duplicate, fixed and deferred; "In progress" and "in_progress" as in-progress.
+ * A leading in / on / not / won't keeps its next word: "won't fix" is wont-fix, "on hold" stays on-hold.
+ */
+export function normStatus(raw) {
+  const s = String(raw ?? "").toLowerCase().replace(/[`*]/g, "").replaceAll("_", "-").trim().replace(/^(in|on|not|won'?t)[\s-]+([a-z]+)/, "$1-$2");
+  const word = /^[a-z][a-z'-]*/.exec(s)?.[0].replace(/-+$/, "") ?? "";
+  return ALIASES[word] ?? (word || "new");
 }
 
 /** A log line's "HH:MM" (local time) as the first such moment from an hour before the mission's start on. */

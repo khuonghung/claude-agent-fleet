@@ -6,7 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { clockToIso, readBoard } from "../scripts/server/board.mjs";
+import { clockToIso, normStatus, readBoard } from "../scripts/server/board.mjs";
 import { createTranscripts, redactHome } from "../scripts/server/transcripts.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -181,4 +181,25 @@ test("server: the dashboard re-reads fleet.json when it changes, and keeps the l
     server.kill();
     fs.rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test("board: only the status word counts, whatever follows it", () => {
+  const cases = {
+    "duplicate → N-019": "duplicate",
+    "duplicate of N-017": "duplicate",
+    "Fixed — dev-api @ 7f3a2540": "fixed",
+    "`verified`": "verified",
+    "**integrated**": "integrated",
+    "In progress": "in-progress",
+    "in_progress": "in-progress",
+    "inprogress": "in-progress",
+    "in-progress (dev-api)": "in-progress",
+    "won't fix": "wont-fix",
+    "Won't-fix": "wont-fix",
+    "deferred to next sweep": "deferred",
+    "on hold": "on-hold",
+    done: "fixed",
+    "": "new",
+  };
+  for (const [raw, want] of Object.entries(cases)) assert.equal(normStatus(raw), want, raw);
 });
