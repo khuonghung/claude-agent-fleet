@@ -89,8 +89,15 @@ export function agentStatusLabel(tr: T, st: AgentStatus): string {
   return st.kind === "running" ? tr("ag.running", { tool: st.tool ?? "" }) : tr(`ag.${st.kind}` as Parameters<T>[0]);
 }
 
+/** Whether a free-text "who" (a ticket's Owner, Verifier or Crew) names this member by its whole id: "qa2" is not "qa". */
+export const names = (text: string | undefined, agentId: string) => String(text ?? "").toLowerCase().split(/[^a-z0-9-]+/).includes(agentId);
+
 export function ownerOf(t: Ticket, agentId: string) {
-  return t.owner.includes(agentId);
+  return names(t.owner, agentId);
+}
+
+export function verifierOf(t: Ticket, agentId: string) {
+  return names(t.verifier, agentId);
 }
 
 export function sortTickets(list: Ticket[]) {
@@ -162,6 +169,6 @@ export function span(ms: number): string {
 }
 
 /** Tickets verified that the agent owned or verified: a mascot cheers each time this rises. */
-export const cheerOf = (s: FleetState, id: string) => (s.board?.tickets ?? []).filter((x) => x.status === "verified" && (x.owner.includes(id) || x.verifier.includes(id))).length;
+export const cheerOf = (s: FleetState, id: string) => (s.board?.tickets ?? []).filter((x) => x.status === "verified" && (ownerOf(x, id) || verifierOf(x, id))).length;
 
 export const launched = (s: FleetState) => s.agents.some((a) => s.telemetry[a.id]?.lastAt);

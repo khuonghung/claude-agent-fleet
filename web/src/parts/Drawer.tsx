@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useI18n } from "../i18n";
-import { agentById, cheerOf, agentStatus, agentStatusLabel, ago, clock, compact, dateTime, DONE, modelLabel, statusLabel, toolName } from "../lib";
+import { agentById, cheerOf, agentStatus, agentStatusLabel, ago, clock, compact, dateTime, DONE, modelLabel, ownerOf, statusLabel, toolName, verifierOf } from "../lib";
 import type { FleetState } from "../types";
 import { Icon } from "../ui/Icons";
 import { Avatar, ModelChip, Sparkline } from "./Fleet";
@@ -18,7 +18,7 @@ function AgentDetail({ s, id, now, onTicket, onDoc }: { s: FleetState; id: strin
   const st = agentStatus(tele, now);
   const roster = s.board?.roster[id];
   const branch = s.git?.branches.find((b) => b.agent === id);
-  const tickets = (s.board?.tickets ?? []).filter((x) => x.owner.includes(id) || x.verifier.includes(id));
+  const tickets = (s.board?.tickets ?? []).filter((x) => ownerOf(x, id) || verifierOf(x, id));
   const mix = Object.entries(tele?.toolMix ?? {}).sort((x, y) => y[1] - x[1]);
   const mixMax = Math.max(1, ...mix.map(([, n]) => n));
   const report = s.board?.reports.find((r) => r.name === id);

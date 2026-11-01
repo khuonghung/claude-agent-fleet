@@ -1,5 +1,5 @@
 import { useI18n } from "../i18n";
-import { agentStatus, cheerOf, agentStatusLabel, ago, compact, DONE, endOf, modelLabel, modelMismatch, ownerOf, startOf } from "../lib";
+import { agentStatus, cheerOf, agentStatusLabel, ago, compact, DONE, endOf, modelLabel, modelMismatch, ownerOf, startOf, verifierOf } from "../lib";
 import type { AgentDef, FleetState, Mission, Telemetry } from "../types";
 import { spotlight } from "../ui/motion";
 import { Mascot } from "./Mascot";
@@ -53,7 +53,7 @@ function AgentCard({ s, agent, now, onOpen }: { s: FleetState; agent: AgentDef; 
   const st = agentStatus(tele, now);
   const tickets = s.board?.tickets ?? [];
   const owned = tickets.filter((x) => ownerOf(x, agent.id));
-  const verifying = tickets.filter((x) => x.verifier.includes(agent.id) && ["fixed", "integrated"].includes(x.status));
+  const verifying = tickets.filter((x) => verifierOf(x, agent.id) && ["fixed", "integrated"].includes(x.status));
   const branch = s.git?.branches.find((b) => b.agent === agent.id);
   const commits = branch?.commits.filter((c) => !c.merge) ?? [];
   const isIntegration = branch !== undefined && branch.branch === s.git?.integration;
@@ -105,7 +105,7 @@ function AgentCard({ s, agent, now, onOpen }: { s: FleetState; agent: AgentDef; 
           <dt>{checks ? t("card.verified") : t("card.tickets")}</dt>
           <dd>
             {checks
-              ? `${tickets.filter((x) => x.verifier.includes(agent.id) && x.status === "verified").length}/${tickets.filter((x) => x.verifier.includes(agent.id)).length}`
+              ? `${tickets.filter((x) => verifierOf(x, agent.id) && x.status === "verified").length}/${tickets.filter((x) => verifierOf(x, agent.id)).length}`
               : `${owned.filter((x) => DONE.includes(x.status)).length}/${owned.length}`}
           </dd>
         </div>
