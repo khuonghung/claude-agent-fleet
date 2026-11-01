@@ -63,7 +63,9 @@ export function briefOf(fleet, agent) {
     skills: skillList(agent),
     rosterCmd: rosterCmd(fleet, agent.id),
     sayCmd: sayCmd(fleet, agent.id),
-    worktreeNote: agent.worktree ? " (you work in your own git worktree: never touch the base branch, and see \"Writing to the board from a worktree\" in the protocol)" : "",
+    worktreeNote: agent.worktree
+      ? ` (you work in your own git worktree: never touch the base branch, and see "Writing to the board from a worktree" in the protocol). A worktree has none of the files git ignores: before you run tests, copy the env files the main checkout has into it (\`${cli(fleet, "doctor")}\` lists them under "env files"), or tests that need them skip themselves and still pass`
+      : "",
   });
 }
 

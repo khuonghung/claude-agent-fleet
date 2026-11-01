@@ -9,6 +9,7 @@
 //                                     refuses to rewrite a started fleet or to replace a running one unless --force
 //   fleet add <member.json> [--dry-run] adds one member (or an array) to the running fleet; prints what to launch for it
 //   fleet extend --hours N | --to T [--dry-run] moves the fleet's end later: phases, windows, briefs, agents; tells the team
+//   fleet doctor [--json]             checks before launch: node, plugin version, git, env files worktrees lack, turbo env, port
 //   fleet launch-plan                 what to start for each member (JSON), for /agent-fleet:launch
 //   fleet brief <member>              prints a member's brief
 //   fleet resume <member>             prints the note that restarts a member cleared to save tokens
@@ -26,6 +27,7 @@ import http from "node:http";
 import net from "node:net";
 import path from "node:path";
 import { branchOf, CHANNEL_HEAD, hhmm, launchPlan, writeAgents, writeBoard } from "./lib/board-init.mjs";
+import { doctor } from "./lib/doctor.mjs";
 import { estimateFleet, memberEstimate } from "./lib/estimate.mjs";
 import { addToPlan, budgetState, catalog, contextState, extendPlan, modelId, normalizePlan, PLUGIN_ROOT, PLUGIN_VERSION, readFleet, versionNote } from "./lib/plan.mjs";
 import { normStatus } from "./server/board.mjs";
@@ -124,6 +126,26 @@ function initConflicts(plan) {
   }
   return problems;
 }
+
+/** Whether the dashboard of the fleet `slug` answers on a port. Plain http with no kept-alive socket: fetch leaves one
+ * open, and exiting with it crashes Node on Windows. */
+const isDashboardOf = (port, slug) =>
+  new Promise((done) => {
+    const req = http.get({ host: "127.0.0.1", port, path: "/api/state", agent: false, timeout: 1500 }, (res) => {
+      let body = "";
+      res.setEncoding("utf8");
+      res.on("data", (chunk) => (body += chunk));
+      res.on("end", () => {
+        try {
+          done(JSON.parse(body)?.mission?.slug === slug);
+        } catch {
+          done(false);
+        }
+      });
+    });
+    req.on("timeout", () => req.destroy());
+    req.on("error", () => done(false));
+  });
 
 const answers = (port) =>
   new Promise((done) => {
@@ -297,6 +319,21 @@ switch (command) {
     break;
   }
 
+  case "doctor": {
+    const fleetFile = currentFleetFile();
+    const fleet = readFleet(fleetFile);
+    const probe = async (port) => (!(await answers(port)) ? "free" : (await isDashboardOf(port, fleet.mission.slug)) ? "ours" : "other");
+    const checks = await doctor(fleet, { fleetDir: path.dirname(fleetFile), probe });
+    const failed = checks.some((c) => c.state === "fail");
+    if (args.includes("--json")) out({ ok: !failed, checks });
+    else {
+      const mark = { ok: "✓", warn: "!", fail: "✗" };
+      out([`Fleet "${fleet.mission.name}" before launch:`, ...checks.map((c) => `  ${mark[c.state]} ${c.name.padEnd(18)} ${c.detail}`), failed ? "Fix every ✗ before launching." : "Ready to launch; read each ! to the user."].join("\n"));
+    }
+    if (failed) process.exitCode = 1;
+    break;
+  }
+
   case "launch-plan":
     out(launchPlan(readFleet(currentFleetFile())));
     break;
@@ -357,24 +394,7 @@ switch (command) {
     const fleet = readFleet(fleetFile);
     const stateFile = path.join(path.dirname(fleetFile), "dashboard.json");
     // The dashboard of this fleet may already run; another fleet's (or anything else) on the port means the next free one.
-    // Plain http with no kept-alive socket: fetch leaves one open, and exiting with it crashes Node on Windows.
-    const ours = (p) =>
-      new Promise((done) => {
-        const req = http.get({ host: "127.0.0.1", port: p, path: "/api/state", agent: false, timeout: 1500 }, (res) => {
-          let body = "";
-          res.setEncoding("utf8");
-          res.on("data", (chunk) => (body += chunk));
-          res.on("end", () => {
-            try {
-              done(JSON.parse(body)?.mission?.slug === fleet.mission.slug);
-            } catch {
-              done(false);
-            }
-          });
-        });
-        req.on("timeout", () => req.destroy());
-        req.on("error", () => done(false));
-      });
+    const ours = (p) => isDashboardOf(p, fleet.mission.slug);
     // The URL goes on a line of its own, nothing glued to it, so a terminal (or Claude's reply) makes it a link;
     // `--json` keeps the machine form.
     const report = (result) => {

@@ -27,12 +27,12 @@ const plan = (extra = {}) => ({
 });
 
 /** A temporary project with a fleet written as `fleet init` leaves it; `fn` gets its folder, board and a CLI runner. */
-function withFleet(fn, extra) {
+async function withFleet(fn, extra) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "fleet-"));
   try {
     const { fleetFile, boardDir } = writeBoard(normalizePlan(plan(extra), { cwd: dir }));
     const run = (...args) => spawnSync(process.execPath, [cli, ...args], { cwd: dir, encoding: "utf8" });
-    return fn({ dir, fleetFile, boardDir, run });
+    return await fn({ dir, fleetFile, boardDir, run });
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
@@ -55,5 +55,43 @@ test("version: every write stamps the plugin's version; an older session is told
     assert.deepEqual(JSON.parse(run("version").stdout).fleet, "99.0.0");
     const started = spawnSync(process.execPath, [hook, "session-start"], { input: JSON.stringify({ cwd: dir, session_id: "s-1", source: "startup" }), encoding: "utf8" });
     assert.match(started.stdout, /was written by 99\.0\.0[\s\S]*Agent fleet "Night team" is active/);
+  });
+});
+
+/** Runs git in a test repository, with an identity of its own. */
+const gitIn = (dir, ...args) => {
+  const r = spawnSync("git", ["-C", dir, "-c", "user.email=t@example.com", "-c", "user.name=t", "-c", "commit.gpgsign=false", ...args], { encoding: "utf8" });
+  assert.equal(r.status, 0, `git ${args.join(" ")}: ${r.stderr}`);
+  return r.stdout.trim();
+};
+
+test("doctor: env files a worktree lacks, variables turbo drops, a dirty checkout and a missing base are named before launch", async () => {
+  const { doctor, envKeys } = await import("../scripts/lib/doctor.mjs");
+  assert.deepEqual(envKeys("# c\nDATABASE_URL=x\nexport API_KEY = y\n\nnot a line\n"), ["DATABASE_URL", "API_KEY"]);
+  await withFleet(async ({ dir, fleetFile, run }) => {
+    gitIn(dir, "init", "-q", "-b", "main");
+    fs.writeFileSync(path.join(dir, ".gitignore"), ".env\n.fleet/\n.claude/\n");
+    fs.writeFileSync(path.join(dir, "turbo.json"), JSON.stringify({ globalPassThroughEnv: ["NODE_*"], tasks: { test: { env: ["CI"] } } }));
+    gitIn(dir, "add", "-A");
+    gitIn(dir, "commit", "-q", "-m", "init");
+    fs.writeFileSync(path.join(dir, ".env"), "DATABASE_URL=postgres://x\nNODE_ENV=test\nCI=1\n");
+    fs.writeFileSync(path.join(dir, "draft.txt"), "uncommitted\n");
+    const fleet = readFleet(fleetFile);
+    const checks = await doctor(fleet, { fleetDir: path.dirname(fleetFile), probe: async () => "free" });
+    const of = (name) => checks.find((c) => c.name === name);
+    assert.equal(of("base branch").state, "ok");
+    assert.equal(of("env files").state, "warn");
+    assert.match(of("env files").detail, /worktrees will not have \.env/);
+    assert.equal(of("turbo env").state, "warn");
+    assert.match(of("turbo env").detail, /drops DATABASE_URL:/, "NODE_ENV matches NODE_*, CI is the test task's");
+    assert.equal(of("working tree").state, "warn");
+    assert.equal(of("briefs").state, "ok");
+    fleet.repo.base = "develop";
+    const noBase = await doctor(fleet, { fleetDir: path.dirname(fleetFile), probe: async () => "other" });
+    assert.equal(noBase.find((c) => c.name === "base branch").state, "fail");
+    assert.equal(noBase.find((c) => c.name === "dashboard port").state, "warn");
+    const cli = run("doctor", "--json");
+    assert.equal(cli.status, 0, cli.stderr);
+    assert.equal(JSON.parse(cli.stdout).ok, true);
   });
 });

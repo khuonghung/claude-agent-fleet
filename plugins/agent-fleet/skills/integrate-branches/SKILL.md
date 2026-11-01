@@ -10,7 +10,7 @@ The integration branch is the one place where everyone's work meets. Keep it gre
 ## Before the first round
 
 1. Your worktree's branch is the integration branch; write it in `ROSTER.md`.
-2. Make sure the tests can run here. A worktree has no untracked files: copy the `.env` (or whatever the tests read) from the main checkout, start the services they need, and check the test runner passes the variables through (a task runner such as turbo may drop `DATABASE_URL` unless it is declared). A suite that skips itself for want of a database is not green, it did not run.
+2. Make sure the tests can run here (`fleet doctor` names the env files a worktree lacks and the variables turbo drops). A worktree has no untracked files: copy the `.env` (or whatever the tests read) from the main checkout, start the services they need, and check the test runner passes the variables through (a task runner such as turbo may drop `DATABASE_URL` unless it is declared). A suite that skips itself for want of a database is not green, it did not run.
 3. Run the project's full checks on it once (install, build, typecheck, lint, tests) and record the **baseline** in your report: the exact commands, and per suite how many tests passed, failed and were **skipped**. Later rounds are judged against it.
 
 ## Each round (about every 30 minutes, or when several tickets are `fixed`)

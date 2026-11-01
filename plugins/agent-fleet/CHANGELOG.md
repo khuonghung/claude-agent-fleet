@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- `fleet doctor` checks a fleet before it launches, and `/agent-fleet:launch` runs it first: Node, the plugin version against the fleet's, the base branch, uncommitted changes worktrees will not see, the git-ignored env files a worktree will not have, the variables turbo's strict env mode drops (the cause of a real run's API suite skipping itself while reported green), briefs and installed agents, the `claude` CLI for headless members, the current fleet and the dashboard's port. `✗` must be fixed, `!` is read to the user. Briefs of members in worktrees say to copy the env files in before running tests.
 - A fleet knows which plugin wrote it. Every write (`fleet init`, `add`, `extend`) stamps `plugin.version` in `fleet.json`, since the briefs it writes call that version's CLI. A session on an older plugin is told to update and restart — by the session-start hook and by a warning on every fleet command — instead of running a protocol that names commands it does not have. `fleet version` prints both versions.
 
 ## 0.6.0 — 2026-11-01
