@@ -72,7 +72,8 @@ function parseTicket(id, text, stat, date) {
     decision: field(text, "Decision").slice(0, 200),
     fix: field(text, "Fix").slice(0, 120),
     area: field(text, "Area").slice(0, 120),
-    created: stat.birthtime.toISOString(),
+    // Filed at its first Log line, when that is earlier: a file's birth time moves when an editor saves by replacing it.
+    created: new Date(Math.min(stat.birthtimeMs, ...log.map((l) => Date.parse(l.at)))).toISOString(),
     updated: stat.mtime.toISOString(),
     log,
     mentions: mentionsOf(id, text),

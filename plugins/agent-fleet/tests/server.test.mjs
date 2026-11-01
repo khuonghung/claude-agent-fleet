@@ -88,6 +88,8 @@ test("board: tickets, log times on the mission's clock, done and verified times"
     assert.equal(t.log[1].at, new Date(2026, 10, 1, 0, 40).toISOString());
     assert.equal(t.doneAt, t.log[1].at);
     assert.equal(t.verifiedAt, t.log[2].at);
+    // The file was (re)written just now, but the ticket was filed at its first Log line: never fixed before it was filed.
+    assert.equal(t.created, t.log[0].at);
     assert.equal(clockToIso(startAt, "23:59"), new Date(2026, 9, 31, 23, 59).toISOString());
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
