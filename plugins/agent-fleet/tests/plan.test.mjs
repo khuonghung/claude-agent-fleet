@@ -6,7 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { agentFileOf, briefOf, launchPlan, prefixes, writeAgents, writeBoard } from "../scripts/lib/board-init.mjs";
+import { agentFileOf, briefOf, hhmm, launchPlan, prefixes, writeAgents, writeBoard } from "../scripts/lib/board-init.mjs";
 import { addToPlan, codeOf, defaultPhases, normalizePlan, readFleet, slugOf, transcriptFolderOf } from "../scripts/lib/plan.mjs";
 
 const plan = (extra = {}) => ({
@@ -70,8 +70,12 @@ test("init writes the board, one brief per member and the current pointer; ticke
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "fleet-"));
   try {
     const p = normalizePlan(plan(), { cwd: dir });
+    const before = new Date();
     const { fleetFile, boardDir } = writeBoard(p);
     for (const file of ["README.md", "ROSTER.md", "BOARD.md", "NOTICES.md", "briefs/dev-api.md", "briefs/lead.md"]) assert.ok(fs.existsSync(path.join(boardDir, file)), file);
+    // On the local clock, like every other board line, not UTC.
+    const notice = fs.readFileSync(path.join(boardDir, "NOTICES.md"), "utf8").split("\n")[2];
+    assert.ok([hhmm(before), hhmm()].some((t) => notice === `- ${t} lead: fleet "Night team" planned.`), notice);
     assert.equal(fs.readFileSync(path.join(dir, ".fleet", "current"), "utf8").trim(), "night-team");
     assert.match(fs.readFileSync(path.join(boardDir, "README.md"), "utf8"), /Fix what the QA found/);
     const brief = briefOf(p, p.agents.find((a) => a.id === "dev-api"));

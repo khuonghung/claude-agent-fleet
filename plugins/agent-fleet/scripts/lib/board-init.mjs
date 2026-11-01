@@ -9,6 +9,8 @@ import { catalog, modelId, PLUGIN_ROOT, skills } from "./plan.mjs";
 const template = (name) => fs.readFileSync(path.join(PLUGIN_ROOT, "assets", "templates", name), "utf8").replace(/\r\n?/g, "\n");
 const fill = (text, values) => text.replace(/\{\{(\w+)\}\}/g, (_, key) => String(values[key] ?? ""));
 const when = (iso) => new Date(iso).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
+/** The local clock as HH:MM, as every board line is timed (Log lines, notices, channel posts). */
+export const hhmm = (at = new Date()) => `${String(at.getHours()).padStart(2, "0")}:${String(at.getMinutes()).padStart(2, "0")}`;
 const writeIfMissing = (file, text) => {
   if (!fs.existsSync(file)) fs.writeFileSync(file, text);
 };
@@ -110,7 +112,7 @@ export function writeBoard(fleet, { makeCurrent = true } = {}) {
   else fs.writeFileSync(rosterFile, ["# Roster", "", "Each member edits only their own row.", "", "| Name | Role | Session id | Worktree | Branch |", "|---|---|---|---|---|", ...fleet.agents.map((a) => `| ${a.id} | ${a.title} |  |  |  |`), ""].join("\n"));
   writeIfMissing(path.join(dir, "BOARD.md"), `# Board\n\nStack: not running\n\nNo tickets yet.\n`);
   writeIfMissing(path.join(dir, "CHANNEL.md"), CHANNEL_HEAD);
-  writeIfMissing(path.join(dir, "NOTICES.md"), `# Notices\n\n- ${new Date().toISOString().slice(11, 16)} lead: fleet "${fleet.mission.name}" planned.\n`);
+  writeIfMissing(path.join(dir, "NOTICES.md"), `# Notices\n\n- ${hhmm()} lead: fleet "${fleet.mission.name}" planned.\n`);
   for (const agent of fleet.agents) fs.writeFileSync(path.join(dir, "briefs", `${agent.id}.md`), briefOf(fleet, agent));
   fs.writeFileSync(path.join(fleetDir, "fleet.json"), `${JSON.stringify(fleet, null, 2)}\n`);
   if (makeCurrent) fs.writeFileSync(path.join(path.dirname(fleetDir), "current"), `${fleet.mission.slug}\n`);

@@ -21,7 +21,7 @@ import fs from "node:fs";
 import http from "node:http";
 import net from "node:net";
 import path from "node:path";
-import { CHANNEL_HEAD, launchPlan, writeAgents, writeBoard } from "./lib/board-init.mjs";
+import { CHANNEL_HEAD, hhmm, launchPlan, writeAgents, writeBoard } from "./lib/board-init.mjs";
 import { estimateFleet, memberEstimate } from "./lib/estimate.mjs";
 import { addToPlan, budgetState, catalog, modelId, normalizePlan, PLUGIN_ROOT, readFleet } from "./lib/plan.mjs";
 import { normStatus } from "./server/board.mjs";
@@ -64,14 +64,11 @@ const leadOf = () => {
   }
 };
 
-const hhmm = (at = new Date()) => `${String(at.getHours()).padStart(2, "0")}:${String(at.getMinutes()).padStart(2, "0")}`;
-
 /** Posts one line to the team channel: the clock's time, one append per post, so posts at the same moment never erase each other. */
 function post(fleet, id, kind, text) {
   const file = path.join(fleet.board.dir, "CHANNEL.md");
   if (!fs.existsSync(file)) fs.writeFileSync(file, CHANNEL_HEAD);
-  const line = `- ${hhmm()} ${id} · ${kind}: ${text}
-`;
+  const line = `- ${hhmm()} ${id} · ${kind}: ${text}\n`;
   fs.appendFileSync(file, line);
   return line.trimEnd();
 }
@@ -149,8 +146,7 @@ switch (command) {
     for (const a of added) {
       const boss = a.reportsTo === undefined ? "" : `, reports to ${a.reportsTo}`;
       const area = a.owns.length > 0 ? `, owns ${a.owns.join(", ")}` : "";
-      fs.appendFileSync(path.join(plan.board.dir, "NOTICES.md"), `- ${hhmm()} ${leadId}: ${a.id} (${a.title}) joined the fleet${boss}${area}.
-`);
+      fs.appendFileSync(path.join(plan.board.dir, "NOTICES.md"), `- ${hhmm()} ${leadId}: ${a.id} (${a.title}) joined the fleet${boss}${area}.\n`);
       post(plan, leadId, "heads-up", `${a.id} (${a.title}) joined the fleet${boss}${area}. Brief: briefs/${a.id}.md`);
     }
     const ids = new Set(added.map((a) => a.id));
