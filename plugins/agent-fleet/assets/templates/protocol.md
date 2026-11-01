@@ -9,7 +9,7 @@ Board: `{{boardDir}}`. Dashboard: run `/agent-fleet:dashboard` (or open the URL 
 
 {{roster}}
 
-Message a teammate with `SendMessage` and `to` = their session id from `ROSTER.md` (a desktop session) or their name (a subagent). A message to a busy session waits until its turn ends, so **the board is the channel and a message is only the doorbell**: assignments live in the tickets and `BOARD.md`, discussions in `threads/`, and everyone re-reads `BOARD.md`, greps `{{boardDir}}/tickets/` and `{{boardDir}}/threads/` for their id between tasks. The `team-communication` skill has the rules.
+Message a teammate with `SendMessage` and `to` = their session id from `ROSTER.md` (a desktop session) or their name (a subagent). A message to a busy session waits until its turn ends, so **the board is the channel and a message is only the doorbell**: assignments live in the tickets and `BOARD.md`, discussions in `threads/`, short news for everyone in `CHANNEL.md`, and everyone re-reads `BOARD.md`, the last lines of `CHANNEL.md`, greps `{{boardDir}}/tickets/` and `{{boardDir}}/threads/` for their id between tasks. The `team-communication` skill has the rules.
 
 ## Working together
 
@@ -35,6 +35,19 @@ What is being decided or done together, what is known, the options.
 
 Rules: append posts at the end, never edit another member's post; after posting, ring the doorbell — one `SendMessage` line to the members you need ("posted a proposal in threads/<topic>.md, answer by HH:MM"). Every member named in `Members` answers by `Decide by`; no answer by then counts as agreement. The owner decides, writes the `Decision` (and the ticket's `Decision` line), sets `Status: decided`; everyone follows it, and it is reopened only with new evidence. A ticket worked by several members names them in `- Crew:` and has a thread `threads/<ID>.md`. The `discuss-and-decide` and `swarm-ticket` skills say how.
 
+## Team channel
+
+`CHANNEL.md` is the team's one shared line: short news that everyone may need in the next minutes and that fits no ticket or thread — "touching `src/contracts/items.ts` until 12:30", "the stack is down, restarting", "integration round in 5 min", "who knows why `api.test.ts` flakes?". One line per post, newest at the bottom:
+
+```markdown
+- HH:MM <id> · <heads-up | ask | answer | fyi>: <one line, with `path:line` or a ticket id where it matters>
+```
+
+- **Post with the fleet CLI**, never by editing the file: `{{sayCmd}}`. It takes the time from the clock and appends one line, so two members posting at once never erase each other.
+- **Read the last lines** between tasks: `tail -n 30 {{boardDir}}/CHANNEL.md`. Answer an `ask` you can answer with an `answer` that names who asked.
+- **Only what everyone needs now.** Work goes in its ticket, a question that needs a decision opens a thread, news for one member is a direct message. No acks, no thanks, no progress reports.
+- **No doorbell**: posting rings no one. If a member must act, write it in their ticket or thread and message them as usual.
+
 ## Timeline
 
 {{timeline}}
@@ -46,6 +59,7 @@ Rules: append posts at the end, never edit another member's post; after posting,
 | `README.md` | the lead | this protocol |
 | `ROSTER.md` | each member edits only their own row | session id, worktree, branch |
 | `BOARD.md`, `NOTICES.md` | the delivery lead (or the lead) | summary, assignments, notices |
+| `CHANNEL.md` | every member and the owner, one appended line at a time with `fleet say` | the team channel |
 | `tickets/<ID>.md` | see "Tickets" | one file per issue |
 | `threads/<topic>.md` | its members append posts; its owner the header | one discussion or shared piece of work |
 | `reports/<id>.md` | that member only | running notes and the end report |

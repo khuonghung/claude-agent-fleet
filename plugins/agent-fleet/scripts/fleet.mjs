@@ -8,6 +8,7 @@
 //   fleet launch-plan                 what to start for each member (JSON), for /agent-fleet:launch
 //   fleet brief <member>              prints a member's brief
 //   fleet roster <member> <key=value> records a member's session id, worktree or branch in ROSTER.md
+//   fleet say <member> <kind> <text>  posts one line to the team channel (kind: heads-up, ask, answer, fyi)
 //   fleet dashboard [--port N]        starts the dashboard for the current fleet (or says where it runs)
 //   fleet stop                        stops the dashboard
 //   fleet status [--json]             tickets, members, time left and output tokens against the limit
@@ -18,7 +19,7 @@ import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import net from "node:net";
 import path from "node:path";
-import { launchPlan, writeAgents, writeBoard } from "./lib/board-init.mjs";
+import { CHANNEL_HEAD, launchPlan, writeAgents, writeBoard } from "./lib/board-init.mjs";
 import { estimateFleet } from "./lib/estimate.mjs";
 import { budgetState, catalog, modelId, normalizePlan, PLUGIN_ROOT, readFleet } from "./lib/plan.mjs";
 import { normStatus } from "./server/board.mjs";
@@ -171,6 +172,25 @@ switch (command) {
     break;
   }
 
+  case "say": {
+    const fleet = readFleet(currentFleetFile());
+    const [id, kind, ...words] = args.filter((a, i) => a !== "--fleet" && args[i - 1] !== "--fleet");
+    const kinds = ["heads-up", "ask", "answer", "fyi"];
+    if (id !== "owner" && !fleet.agents.some((a) => a.id === id)) fail(`No member ${id}; members: ${fleet.agents.map((a) => a.id).join(", ")} (or owner)`);
+    if (!kinds.includes(kind)) fail(`usage: fleet say <member> <${kinds.join(" | ")}> <text>`);
+    // One line, whatever the shell passed: the channel is read a line at a time.
+    const text = words.join(" ").replace(/\s+/g, " ").trim().slice(0, 400);
+    if (text === "") fail("say what? the text is empty");
+    const file = path.join(fleet.board.dir, "CHANNEL.md");
+    if (!fs.existsSync(file)) fs.writeFileSync(file, CHANNEL_HEAD);
+    // The clock's time, not one the member writes; one append per post, so posts at the same moment never erase each other.
+    const now = new Date();
+    const line = `- ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")} ${id} · ${kind}: ${text}\n`;
+    fs.appendFileSync(file, line);
+    out(line.trimEnd());
+    break;
+  }
+
   case "dashboard": {
     const fleetFile = currentFleetFile();
     const fleet = readFleet(fleetFile);
@@ -279,5 +299,9 @@ switch (command) {
   }
 
   default:
-    out(fs.readFileSync(new URL(import.meta.url), "utf8").split(/\r?\n/).filter((l) => l.startsWith("//")).slice(1, 13).map((l) => l.slice(3)).join("\n"));
+    {
+      // The usage is the comment block at the top of this file, whatever its length.
+      const lines = fs.readFileSync(new URL(import.meta.url), "utf8").split(/\r?\n/).slice(1);
+      out(lines.slice(1, lines.findIndex((l) => !l.startsWith("//"))).map((l) => l.slice(3)).join("\n"));
+    }
 }

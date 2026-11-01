@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -224,6 +224,45 @@ test("a Windows checkout (CRLF templates and skills) still writes LF agents, bri
     assert.ok(!help.stdout.includes("\r"), "the help has no CR");
   } finally {
     fs.rmSync(copy, { recursive: true, force: true });
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("team channel: init creates it, the protocol and briefs explain it, and fleet say appends one clock-timed line per post", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "fleet-"));
+  try {
+    const p = normalizePlan(plan(), { cwd: dir });
+    const { boardDir } = writeBoard(p);
+    const fleetDir = path.dirname(boardDir);
+    const channel = path.join(boardDir, "CHANNEL.md");
+    assert.match(fs.readFileSync(channel, "utf8"), /^# Team channel\n/);
+    const protocol = fs.readFileSync(path.join(boardDir, "README.md"), "utf8");
+    assert.match(protocol, /## Team channel/);
+    assert.ok(protocol.includes(`say <your id> fyi '<one line>' --fleet "${fleetDir.replaceAll("\\", "/")}"`));
+    assert.match(protocol, /\| `CHANNEL.md` \| every member and the owner/);
+    const dev = p.agents.find((a) => a.id === "dev-api");
+    assert.ok(briefOf(p, dev).includes("say dev-api fyi '<one line>'"));
+    assert.ok(agentFileOf(p, dev).includes(`tail -n 30 ${boardDir.replaceAll("\\", "/")}/CHANNEL.md`));
+
+    const cli = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "scripts", "fleet.mjs");
+    const say = (...words) => spawnSync(process.execPath, [cli, "say", ...words, "--fleet", fleetDir], { cwd: dir, encoding: "utf8" });
+    const before = new Date();
+    const ok = say("dev-api", "heads-up", "touching src/contracts/items.ts\nuntil   12:30");
+    assert.equal(ok.status, 0, ok.stderr);
+    const hhmm = (d) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+    const line = fs.readFileSync(channel, "utf8").trimEnd().split("\n").at(-1);
+    assert.ok([hhmm(before), hhmm(new Date())].some((t) => line === `- ${t} dev-api · heads-up: touching src/contracts/items.ts until 12:30`), line);
+    assert.equal(say("owner", "fyi", "the owner can post too").status, 0);
+    assert.notEqual(say("dev-api", "shout", "x").status, 0, "an unknown kind is refused");
+    assert.notEqual(say("stranger", "fyi", "x").status, 0, "someone outside the fleet is refused");
+    assert.notEqual(say("dev-api", "fyi", "   ").status, 0, "an empty post is refused");
+
+    // Eight members posting at the same moment: every post lands, none is torn or lost.
+    const runs = Array.from({ length: 8 }, (_, i) => new Promise((done) => spawn(process.execPath, [cli, "say", "test-api", "fyi", `post ${i}`, "--fleet", fleetDir], { cwd: dir }).on("exit", done)));
+    await Promise.all(runs);
+    const posts = fs.readFileSync(channel, "utf8").split("\n").filter((l) => / test-api · fyi: post \d$/.test(l));
+    assert.deepEqual(posts.map((l) => l.at(-1)).sort(), ["0", "1", "2", "3", "4", "5", "6", "7"]);
+  } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });

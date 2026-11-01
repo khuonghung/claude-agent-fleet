@@ -21,7 +21,7 @@ A finding is a claim about the code, not an order and not an insult. Your job is
 - Fixed: `R-012 fixed in dev-api @ 4b1e2a0 — empty email now rejected at src/validators/user.ts:87; test added; package tests green (output).`
 - Pushback, with evidence: `R-013: keeping the legacy branch — the portal still calls v1 (apps/portal/src/api.ts:22). Remove both together in a follow-up? Filed T1-031.`
 - Not needed: `R-014: grepped — nothing calls this endpoint. Remove it instead of adding filters?`
-- Cannot verify: `R-015: needs the staging database to reproduce. Leaving it open; asked op-ci in NOTICES.`
+- Cannot verify: `R-015: needs the staging database to reproduce. Leaving it open; asked op-ci in the team channel.`
 
 No performative agreement ("great catch!", "you're absolutely right"), no thanks, no long apologies — state the fix or the reason. If you pushed back and were wrong: "Checked — you were right, X does Y. Fixing." and move on.
 

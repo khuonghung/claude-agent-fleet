@@ -29,9 +29,15 @@ export function prefixes(agents) {
 const skillList = (agent) =>
   (agent.skills ?? []).length === 0 ? "(none)" : agent.skills.map((name) => `- \`agent-fleet:${name}\` — ${(skills[name] ?? "").split(/(?<=\.)\s/).slice(-1)[0]}`).join("\n");
 
-/** The shell command that records a member's worktree and branch in ROSTER.md, run as is from any folder (a worktree too). */
-const rosterCmd = (fleet, id) =>
-  `node "${path.join(PLUGIN_ROOT, "scripts", "fleet.mjs").replaceAll("\\", "/")}" roster ${id} worktree="$(git rev-parse --show-toplevel)" branch="$(git branch --show-current)" --fleet "${path.dirname(fleet.board.dir).replaceAll("\\", "/")}"`;
+/** A fleet CLI command that finds this fleet's board from any folder (a worktree too). */
+const cli = (fleet, args) => `node "${path.join(PLUGIN_ROOT, "scripts", "fleet.mjs").replaceAll("\\", "/")}" ${args} --fleet "${path.dirname(fleet.board.dir).replaceAll("\\", "/")}"`;
+/** The shell command that records a member's worktree and branch in ROSTER.md, run as is. */
+const rosterCmd = (fleet, id) => cli(fleet, `roster ${id} worktree="$(git rev-parse --show-toplevel)" branch="$(git branch --show-current)"`);
+/** The shell command that posts one line to the team channel; the kind is heads-up, ask, answer or fyi. */
+const sayCmd = (fleet, id) => cli(fleet, `say ${id} fyi '<one line>'`);
+
+/** The head of a new team channel; posts are appended below it by `fleet say`. */
+export const CHANNEL_HEAD = "# Team channel\n\nShort news for everyone, one line per post, newest at the bottom. Post with `fleet say` (see the protocol), never by editing this file.\n\n";
 
 export function briefOf(fleet, agent) {
   const boss = fleet.agents.find((a) => a.id === agent.reportsTo);
@@ -52,6 +58,7 @@ export function briefOf(fleet, agent) {
     owns: agent.owns.length > 0 ? agent.owns.map((p) => `- \`${p}\``).join("\n") : agent.readOnly ? "You read; you do not change product code." : "(agree it with the delivery lead before you change files)",
     skills: skillList(agent),
     rosterCmd: rosterCmd(fleet, agent.id),
+    sayCmd: sayCmd(fleet, agent.id),
     worktreeNote: agent.worktree ? " (you work in your own git worktree: never touch the base branch, and see \"Writing to the board from a worktree\" in the protocol)" : "",
   });
 }
@@ -84,6 +91,7 @@ export function writeBoard(fleet) {
       parked: fleet.board.parked.join(", "),
       base: fleet.repo.base,
       rosterCmd: rosterCmd(fleet, "<your id>"),
+      sayCmd: sayCmd(fleet, "<your id>"),
     }),
   );
   writeIfMissing(
@@ -91,6 +99,7 @@ export function writeBoard(fleet) {
     ["# Roster", "", "Each member edits only their own row.", "", "| Name | Role | Session id | Worktree | Branch |", "|---|---|---|---|---|", ...fleet.agents.map((a) => `| ${a.id} | ${a.title} |  |  |  |`), ""].join("\n"),
   );
   writeIfMissing(path.join(dir, "BOARD.md"), `# Board\n\nStack: not running\n\nNo tickets yet.\n`);
+  writeIfMissing(path.join(dir, "CHANNEL.md"), CHANNEL_HEAD);
   writeIfMissing(path.join(dir, "NOTICES.md"), `# Notices\n\n- ${new Date().toISOString().slice(11, 16)} lead: fleet "${fleet.mission.name}" planned.\n`);
   for (const agent of fleet.agents) fs.writeFileSync(path.join(dir, "briefs", `${agent.id}.md`), briefOf(fleet, agent));
   fs.writeFileSync(path.join(fleetDir, "fleet.json"), `${JSON.stringify(fleet, null, 2)}\n`);
@@ -142,6 +151,7 @@ export function agentFileOf(fleet, agent) {
     base: fleet.repo.base,
     extraRules: extra.map((line) => `${line}\n`).join(""),
     to: when(agent.window?.to ?? fleet.mission.endAt),
+    sayCmd: sayCmd(fleet, agent.id),
     skills: skillList(agent),
   });
 }
