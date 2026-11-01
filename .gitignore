@@ -4,3 +4,4 @@ node_modules/
 # A recorded fleet points at paths on the machine that ran it
 fleet.json
 history.json
+transitions.json

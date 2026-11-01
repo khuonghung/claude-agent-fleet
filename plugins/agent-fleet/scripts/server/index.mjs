@@ -47,7 +47,25 @@ const state = {
   history: history.points(),
 };
 let dirty = true;
+
+// Status moves are what the board does not keep: they are saved beside the history, so a restart keeps each ticket's
+// time in its stage, and a move made while the server was down is still recorded (at the ticket file's last change).
+const movesFile = path.join(path.dirname(cfgFile), "transitions.json");
 const lastStatus = new Map();
+try {
+  const saved = JSON.parse(fs.readFileSync(movesFile, "utf8"));
+  for (const [id, status] of Object.entries(saved.statuses ?? {})) lastStatus.set(id, status);
+  state.transitions = Array.isArray(saved.transitions) ? saved.transitions : [];
+} catch {
+  // First run, or an unreadable file: moves are recorded from now on.
+}
+const saveMoves = () => {
+  try {
+    fs.writeFileSync(movesFile, JSON.stringify({ statuses: Object.fromEntries(lastStatus), transitions: state.transitions }));
+  } catch {
+    // A read-only disk only costs the moves across restarts.
+  }
+};
 
 /** The agent id behind a session id, an agent id or a session title (as messages address them). */
 const sessionNames = (id) => {
@@ -66,13 +84,20 @@ const transcripts = createTranscripts(cfg, { sessionNames });
 async function refreshBoard() {
   const board = await readBoard(cfg);
   const now = new Date().toISOString();
+  // On the first read of a run, what changed since the saved statuses happened while the server was down.
+  const first = state.board === null;
+  const known = !first || lastStatus.size > 0;
+  let moved = false;
   for (const t of board.tickets) {
     const prev = lastStatus.get(t.id);
-    if (prev === undefined && state.board) state.transitions.push({ id: t.id, from: null, to: t.status, at: now });
-    else if (prev !== undefined && prev !== t.status) state.transitions.push({ id: t.id, from: prev, to: t.status, at: now });
+    if (prev === undefined ? known : prev !== t.status) {
+      state.transitions.push({ id: t.id, from: prev ?? null, to: t.status, at: !first ? now : prev === undefined ? t.created : t.updated });
+      moved = true;
+    }
     lastStatus.set(t.id, t.status);
   }
-  if (state.transitions.length > 300) state.transitions.splice(0, state.transitions.length - 300);
+  if (state.transitions.length > 1000) state.transitions.splice(0, state.transitions.length - 1000);
+  if (moved || first) saveMoves();
   state.board = board;
   dirty = true;
 }
@@ -160,6 +185,7 @@ async function reloadFleet() {
     lastStatus.clear();
     state.board = null;
     state.transitions = [];
+    saveMoves();
   }
   await refreshBoard();
   await transcripts.discover();

@@ -224,3 +224,59 @@ test("board: a guessed future log time reads as the file's last save; a reopened
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("server: status moves survive a restart, and a move made while it was down is recorded at the file's change", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "fleet-srv-"));
+  const port = await new Promise((done) => {
+    const probe = net.createServer().listen(0, "127.0.0.1", () => {
+      const { port: p } = probe.address();
+      probe.close(() => done(p));
+    });
+  });
+  const fleetFile = path.join(dir, "fleet.json");
+  const ticket = path.join(dir, "board", "tickets", "DA-001.md");
+  const write = (status) => fs.writeFileSync(ticket, `# DA-001: x\n\n- Status: ${status}\n- Owner: dev-api\n`);
+  fs.mkdirSync(path.dirname(ticket), { recursive: true });
+  fs.writeFileSync(
+    fleetFile,
+    JSON.stringify({
+      mission: { name: "Night team", slug: "night-team", goal: "g", startAt: new Date(Date.now() - 3600_000).toISOString(), endAt: new Date(Date.now() + 3600_000).toISOString() },
+      repo: { dir, base: "main" },
+      board: { dir: path.join(dir, "board"), flow: ["new", "assigned", "in-progress", "fixed"] },
+      transcripts: { root: path.join(dir, "projects"), dirPrefix: "none" },
+      squads: [{ id: "build" }],
+      agents: [{ id: "dev-api", squad: "build", match: { title: "NT · dev-api" } }],
+    }),
+  );
+  write("assigned");
+  const start = () => spawn(process.execPath, [path.join(root, "scripts", "server", "index.mjs"), fleetFile], { env: { ...process.env, PORT: String(port) }, stdio: "ignore" });
+  const until = async (check) => {
+    for (let i = 0; i < 100; i++) {
+      try {
+        const s = await (await fetch(`http://127.0.0.1:${port}/api/state`)).json();
+        if (check(s)) return s;
+      } catch {
+        // Not listening yet.
+      }
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    throw new Error("timed out");
+  };
+  const stop = (server) => new Promise((done) => (server.once("exit", done), server.kill()));
+  let server = start();
+  try {
+    await until((s) => s.board?.tickets.length === 1);
+    write("in-progress");
+    await until((s) => s.transitions.some((x) => x.to === "in-progress"));
+    await stop(server);
+    write("fixed");
+    const changed = fs.statSync(ticket).mtime.toISOString();
+    server = start();
+    const s = await until((x) => x.board?.tickets[0]?.status === "fixed");
+    assert.deepEqual(s.transitions.map((x) => [x.from, x.to]), [["assigned", "in-progress"], ["in-progress", "fixed"]]);
+    assert.equal(s.transitions[1].at, changed);
+  } finally {
+    await stop(server);
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
