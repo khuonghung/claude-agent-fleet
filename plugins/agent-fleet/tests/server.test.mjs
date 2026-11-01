@@ -344,3 +344,33 @@ test("git: integrated commits are counted against the plan's integration branch,
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("git: each branch says what it changes over the base — lines, and files by package", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "fleet-git-"));
+  const git = (...args) => {
+    const r = spawnSync("git", ["-C", dir, "-c", "user.name=t", "-c", "user.email=t@t", ...args], { encoding: "utf8" });
+    assert.equal(r.status, 0, r.stderr);
+  };
+  const write = (file, text) => {
+    fs.mkdirSync(path.dirname(path.join(dir, file)), { recursive: true });
+    fs.writeFileSync(path.join(dir, file), text);
+  };
+  try {
+    git("init", "-q", "-b", "main");
+    write("package.json", "{}\n");
+    git("add", "-A");
+    git("commit", "-q", "-m", "base");
+    git("checkout", "-q", "-b", "claude/dev-api");
+    write("apps/api/src/a.ts", "one\ntwo\n");
+    write("apps/api/src/b.ts", "three\n");
+    write("package.json", '{"x":1}\n');
+    git("add", "-A");
+    git("commit", "-q", "-m", "fix: api");
+    const g = await readGit({ repo: { dir, base: "main" }, agents: [{ id: "dev-api", role: "developer" }] }, { "dev-api": { branch: "claude/dev-api" } });
+    const b = g.branches.find((x) => x.agent === "dev-api");
+    assert.deepEqual(b.stat, { files: 3, insertions: 4, deletions: 1 });
+    assert.deepEqual(b.packages, { "apps/api": 2, "(root)": 1 });
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

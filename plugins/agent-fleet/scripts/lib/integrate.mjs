@@ -4,7 +4,7 @@
 // the checks; this only saves them the git archaeology that made each round take 10–20 minutes.
 
 import { spawnSync } from "node:child_process";
-import { integrationOf } from "../server/git.mjs";
+import { integrationOf, packageOf } from "../server/git.mjs";
 import { listTickets } from "./tickets.mjs";
 
 const git = (dir, ...args) => {
@@ -14,14 +14,6 @@ const git = (dir, ...args) => {
 
 /** The commit a `Fix:` line names: the last hex word of 7 to 40 characters ("dev-api/fix @ 3f2a1c9" → 3f2a1c9). */
 export const shaOfFix = (fix) => [...String(fix).matchAll(/\b([0-9a-f]{7,40})\b/gi)].at(-1)?.[1];
-
-/** A package folder: `apps/api/src/x.ts` → `apps/api`; a root file → "" (shared: the lockfile, root config). */
-const PACKAGE_ROOTS = new Set(["apps", "packages", "libs", "services", "modules", "crates", "plugins"]);
-export function packageOf(file) {
-  const parts = file.split("/");
-  if (parts.length === 1) return "";
-  return PACKAGE_ROOTS.has(parts[0]) && parts.length > 2 ? `${parts[0]}/${parts[1]}` : parts[0];
-}
 
 /**
  * The plan of a round: `merges` in order (each with its tickets, commit, packages and the exact command), `blocked`
@@ -84,7 +76,7 @@ export function integrationPlan(fleet, roster) {
     const all = [...along, c.ticket.id].map((id) => tickets.find((t) => t.id === id));
     const files = git(dir, "diff", "--name-only", `${into}...${c.sha}`).out.split("\n").filter(Boolean);
     const packages = [...new Set(files.map(packageOf))];
-    const named = packages.filter(Boolean).map((p) => p.split("/").at(-1));
+    const named = packages.filter((p) => p !== "(root)").map((p) => p.split("/").at(-1));
     const scope = named.length === 0 ? "repo" : named.length <= 2 ? named.join(",") : "multi";
     const subject = `merge(${scope}): ${all.map((t) => t.title || t.id).join("; ")}`.replace(/"/g, "'");
     const message = subject.length > 72 ? `${subject.slice(0, 71)}…` : subject;
@@ -93,7 +85,7 @@ export function integrationPlan(fleet, roster) {
       tickets: all.map((t) => t.id),
       sha: c.sha.slice(0, 7),
       commits: c.commits.length,
-      packages: packages.map((p) => p || "(root)"),
+      packages,
       message,
       command: `git merge --no-ff ${c.sha.slice(0, 7)} -m "${message}" -m "Tickets: ${list}"`,
     });

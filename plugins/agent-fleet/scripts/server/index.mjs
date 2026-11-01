@@ -1,7 +1,8 @@
-// Agent Fleet server: collects board, git, transcripts and port probes, and streams the fleet state
-// to the dashboard over Server-Sent Events. No dependencies beyond Node.
+// Agent Fleet server: collects board, git, transcripts, port probes, the integration plan and the pre-flight checks,
+// and streams the fleet state to the dashboard over Server-Sent Events. No dependencies beyond Node.
 //
 //   node scripts/server/index.mjs <.fleet/<slug>/fleet.json>
+import { execFile } from "node:child_process";
 import fs from "node:fs";
 import http from "node:http";
 import net from "node:net";
@@ -43,6 +44,8 @@ const state = {
   git: null,
   telemetry: {},
   probes: [],
+  integration: null,
+  doctor: null,
   transitions: [],
   history: history.points(),
 };
@@ -131,6 +134,40 @@ async function refreshProbes() {
     state.probes = next;
     dirty = true;
   }
+}
+
+/**
+ * Runs a read-only fleet CLI command as a child process and parses its JSON: `fleet integrate` makes a git call per
+ * ticket, and `fleet doctor` probes git and the ports, which must not stall the stream. A refusal comes back as
+ * `{ error }` (no integration branch yet, say), so the page can say why.
+ */
+const cli = (...args) =>
+  new Promise((done) => {
+    execFile(process.execPath, [path.join(PLUGIN_ROOT, "scripts", "fleet.mjs"), ...args, "--json", "--fleet", path.dirname(cfgFile)], { timeout: 60_000, maxBuffer: 8 * 1024 * 1024, windowsHide: true }, (error, stdout, stderr) => {
+      try {
+        done(JSON.parse(stdout));
+      } catch {
+        done({ error: (stderr || error?.message || "no answer").trim().split("\n").filter((l) => !l.startsWith("warning:")).join(" ").slice(0, 400) });
+      }
+    });
+  });
+
+async function refreshIntegration() {
+  if (clients.size === 0 && state.integration) return;
+  const next = { ...(await cli("integrate")), at: new Date().toISOString() };
+  const { at, ...rest } = next;
+  const { at: _, ...prev } = state.integration ?? {};
+  if (JSON.stringify(rest) !== JSON.stringify(prev)) {
+    state.integration = next;
+    dirty = true;
+  }
+}
+
+async function refreshDoctor() {
+  if (clients.size === 0 && state.doctor) return;
+  const next = await cli("doctor");
+  state.doctor = { ...next, at: new Date().toISOString() };
+  dirty = true;
 }
 
 async function refreshTranscripts() {
@@ -282,7 +319,7 @@ const server = http.createServer(async (req, res) => {
     }
     res.write(`data: ${out({ ...state, serverTime: new Date().toISOString() })}\n\n`);
     clients.add(res);
-    if (clients.size === 1) Promise.all([refreshGit(), refreshProbes()]).catch(() => {});
+    if (clients.size === 1) Promise.all([refreshGit(), refreshProbes(), refreshIntegration(), refreshDoctor()]).catch(() => {});
     req.on("close", () => clients.delete(res));
     return;
   }
@@ -321,6 +358,8 @@ every(30000, () => transcripts.discover());
 every(1500, refreshTranscripts);
 every(10000, refreshGit);
 every(10000, refreshProbes);
+every(30000, refreshIntegration);
+every(120000, refreshDoctor);
 setTimeout(() => every(60000, sampleHistory), 5000);
 
 server.listen(port, "127.0.0.1", () => console.log(`Agent Fleet control room: http://localhost:${port} (${path.basename(cfgFile)})`));
