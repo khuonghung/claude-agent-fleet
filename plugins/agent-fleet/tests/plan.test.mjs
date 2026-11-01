@@ -137,7 +137,7 @@ test("init generates one agent per member from the plan, and installs them as pr
     const text = fs.readFileSync(path.join(agentsDir, "dev-api.md"), "utf8");
     assert.ok(
       text.startsWith(
-        ["---", "name: fleet-night-team-dev-api", 'description: Developer of the "Night team" fleet — Auth and the member API. Use for member dev-api of this fleet.', "model: opus", "---"].join("\n"),
+        ["---", "name: fleet-night-team-dev-api", 'description: Developer of the "Night team" fleet — Auth and the member API. Use for member dev-api of this fleet.', "model: opus", "autoCompactWindow: 100000", "---"].join("\n"),
       ),
     );
     assert.match(text, /You are \*\*dev-api\*\*, the Developer/);

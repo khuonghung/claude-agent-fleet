@@ -9,3 +9,4 @@ Give the user a short status of the current agent fleet, in their language.
 3. Read the fleet board's `BOARD.md` and `NOTICES.md` and skim `tickets/` for `reopened`, `critical` and fixes waiting for verification.
 4. Answer in a few lines, in the Progress · Plans · Problems shape of the `agent-fleet:status-report` skill: time left and phase; tickets found / fixed / verified; members idle or silent for 10+ minutes; output tokens against the limit (`budget` in the status: used / limit, and what happens at it, or "no limit"); anything that needs the user (a decision, a model mismatch, the base branch moving). End with the dashboard URL.
 5. If `budget.state` is `near` or `over` and `NOTICES.md` does not show it was handled, act as `/agent-fleet:launch` describes under "Keeping the token limit".
+6. If `context.clear` names members, clear and wake them as `/agent-fleet:launch` describes under "Keeping context lean", and say who was cleared and at what context size.

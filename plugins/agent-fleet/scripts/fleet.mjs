@@ -8,11 +8,12 @@
 //   fleet add <member.json> [--dry-run] adds one member (or an array) to the running fleet; prints what to launch for it
 //   fleet launch-plan                 what to start for each member (JSON), for /agent-fleet:launch
 //   fleet brief <member>              prints a member's brief
+//   fleet resume <member>             prints the note that restarts a member cleared to save tokens
 //   fleet roster <member> <key=value> records a member's session id, worktree or branch in ROSTER.md
 //   fleet say <member> <kind> <text>  posts one line to the team channel (kind: heads-up, ask, answer, fyi)
 //   fleet dashboard [--port N] [--json] starts the dashboard for the current fleet (or says where it runs) and prints its URL
 //   fleet stop                        stops the dashboard
-//   fleet status [--json]             tickets, members, time left and output tokens against the limit
+//   fleet status [--json]             tickets, members, time left, output tokens against the limit, members to clear
 //   fleet spawn <member>              starts a member as a headless `claude -p` process (launch: headless)
 
 import { spawn } from "node:child_process";
@@ -23,8 +24,9 @@ import net from "node:net";
 import path from "node:path";
 import { CHANNEL_HEAD, hhmm, launchPlan, writeAgents, writeBoard } from "./lib/board-init.mjs";
 import { estimateFleet, memberEstimate } from "./lib/estimate.mjs";
-import { addToPlan, budgetState, catalog, modelId, normalizePlan, PLUGIN_ROOT, readFleet } from "./lib/plan.mjs";
+import { addToPlan, budgetState, catalog, contextState, modelId, normalizePlan, PLUGIN_ROOT, readFleet } from "./lib/plan.mjs";
 import { normStatus } from "./server/board.mjs";
+import { recordSession, resumeNote } from "./lib/sessions.mjs";
 import { createTranscripts } from "./server/transcripts.mjs";
 
 const [command, ...args] = process.argv.slice(2);
@@ -194,6 +196,15 @@ switch (command) {
     break;
   }
 
+  case "resume": {
+    // The note the lead sends a member it cleared to save tokens: it starts the member's fresh context from the board.
+    const fleet = readFleet(currentFleetFile());
+    const id = args.find((a, i) => !a.startsWith("--") && args[i - 1] !== "--fleet");
+    if (!fleet.agents.some((a) => a.id === id)) fail(`No member ${id}; members: ${fleet.agents.map((a) => a.id).join(", ")}`);
+    out(resumeNote(fleet, id));
+    break;
+  }
+
   case "roster": {
     const fleet = readFleet(currentFleetFile());
     // `--fleet <dir>` may come anywhere: the rest is the member and its key=value pairs.
@@ -308,27 +319,37 @@ switch (command) {
   }
 
   case "status": {
-    const fleet = readFleet(currentFleetFile());
+    const fleetFile = currentFleetFile();
+    const fleet = readFleet(fleetFile);
     const ticketsDir = path.join(fleet.board.dir, "tickets");
     const tickets = fs.existsSync(ticketsDir) ? fs.readdirSync(ticketsDir).filter((f) => f.endsWith(".md")) : [];
     const statuses = {};
+    const inProgress = {};
     for (const file of tickets) {
+      const text = fs.readFileSync(path.join(ticketsDir, file), "utf8");
       // Read as the dashboard reads it: "In progress" is in-progress, not "In".
-      const status = normStatus(/^[ \t]*-[ \t]*Status:[ \t]*(.*)$/im.exec(fs.readFileSync(path.join(ticketsDir, file), "utf8"))?.[1] ?? "");
+      const status = normStatus(/^[ \t]*-[ \t]*Status:[ \t]*(.*)$/im.exec(text)?.[1] ?? "");
       statuses[status] = (statuses[status] ?? 0) + 1;
+      const owner = /^[ \t]*-[ \t]*Owner:[ \t]*([a-z][a-z0-9-]*)/im.exec(text)?.[1];
+      if (status === "in-progress" && owner) (inProgress[owner] ??= []).push(file.replace(/\.md$/, ""));
     }
     const left = Math.max(0, Math.round((Date.parse(fleet.mission.endAt) - Date.now()) / 60_000));
     // Output tokens read from the members' transcripts, the way the dashboard counts them (each message once).
-    const transcripts = createTranscripts(fleet, { sessionNames: (id) => id });
+    const transcripts = createTranscripts(fleet, { sessionNames: (id) => id, fleetDir: path.dirname(fleetFile) });
     await transcripts.discover();
     await transcripts.poll();
-    const used = Object.values(transcripts.snapshot()).reduce((n, t) => n + (t?.outputTokens ?? 0), 0);
+    const telemetry = transcripts.snapshot();
+    const used = Object.values(telemetry).reduce((n, t) => n + (t?.outputTokens ?? 0), 0);
     const budget = budgetState(fleet.budget, used);
-    const status = { mission: fleet.mission.name, goal: fleet.mission.goal, minutesLeft: left, members: fleet.agents.length, tickets: tickets.length, statuses, budget };
+    const context = contextState(fleet, telemetry, { inProgress });
+    const status = { mission: fleet.mission.name, goal: fleet.mission.goal, minutesLeft: left, members: fleet.agents.length, tickets: tickets.length, statuses, budget, context };
     const k = (n) => `${Math.round(n / 1000)}k`;
     const tokens = budget.state === "none" ? `${k(used)} output tokens (no limit)` : `${k(used)} / ${k(budget.limit)} output tokens (${Math.round(budget.share * 100)}%, ${budget.state}; at the limit: ${budget.onLimit})`;
     if (args.includes("--json")) out(status);
-    else out(`${status.mission}: ${left} min left · ${status.members} members · ${status.tickets} tickets · ${Object.entries(statuses).map(([key, v]) => `${key} ${v}`).join(", ") || "none yet"} · ${tokens}`);
+    else {
+      const heavy = context.clear.map((id) => `${id} ${k(context.members.find((m) => m.id === id).tokens)}`);
+      out(`${status.mission}: ${left} min left · ${status.members} members · ${status.tickets} tickets · ${Object.entries(statuses).map(([key, v]) => `${key} ${v}`).join(", ") || "none yet"} · ${tokens}${heavy.length ? ` · to clear (idle, context over ${k(context.compactAt)}): ${heavy.join(", ")}` : ""}`);
+    }
     break;
   }
 
@@ -356,9 +377,12 @@ switch (command) {
       ...(agent.worktree ? ["--worktree", `${fleet.mission.slug}-${agent.id}`.slice(0, 40)] : []),
       ...(flag("permission-mode") === undefined ? [] : ["--permission-mode", flag("permission-mode")]),
     ];
-    const child = spawn("claude", cliArgs.map((a) => (process.platform === "win32" && /\s/.test(a) ? `"${a}"` : a)), { cwd: fleet.repo.dir, detached: true, stdio: ["pipe", log, log], shell: process.platform === "win32", windowsHide: true });
+    // Compact at the fleet's context size instead of near the model's limit: every call re-reads the whole context.
+    const env = { ...process.env, ...(fleet.context?.compactAt ? { CLAUDE_CODE_AUTO_COMPACT_WINDOW: String(fleet.context.compactAt) } : {}) };
+    const child = spawn("claude", cliArgs.map((a) => (process.platform === "win32" && /\s/.test(a) ? `"${a}"` : a)), { cwd: fleet.repo.dir, detached: true, env, stdio: ["pipe", log, log], shell: process.platform === "win32", windowsHide: true });
     child.stdin.end(brief);
     child.unref();
+    recordSession(path.dirname(fleetFile), agent.id, { sessionId });
     agent.match.sessionId = sessionId;
     fs.writeFileSync(fleetFile, `${JSON.stringify(fleet, null, 2)}\n`);
     out({ member: agent.id, pid: child.pid, sessionId, log: path.join(logDir, `${agent.id}.log`) });

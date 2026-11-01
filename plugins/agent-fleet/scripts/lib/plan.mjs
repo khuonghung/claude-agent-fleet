@@ -31,6 +31,24 @@ export function budgetState(budget, used) {
   const share = used / limit;
   return { state: share >= 1 ? "over" : share >= (budget.warnAt ?? 0.8) ? "near" : "ok", used, limit, share: Math.round(share * 1000) / 1000, onLimit: budget.onLimit ?? "warn" };
 }
+/** The context size (input tokens of a member's last model call) a member is kept under: the default. */
+export const COMPACT_AT = 100_000;
+
+/**
+ * The members worth clearing to save tokens: a desktop session over `context.compactAt` whose turn has ended (the
+ * board holds its state, so a fresh context loses nothing). Every model call re-reads the whole context, so a member
+ * carrying 150k tokens into its next ticket pays for them on each step. `compactAt: 0` turns it off.
+ */
+export function contextState(fleet, telemetry, { inProgress = {} } = {}) {
+  const limit = fleet.context?.compactAt ?? COMPACT_AT;
+  const members = fleet.agents.map((agent) => {
+    const t = telemetry[agent.id];
+    return { id: agent.id, launch: agent.launch, tokens: t?.contextTokens ?? 0, idle: t?.phase === "replied", inProgress: inProgress[agent.id] ?? [] };
+  });
+  const clear = limit ? members.filter((m) => m.launch === "session" && m.idle && m.tokens >= limit).map((m) => m.id) : [];
+  return { compactAt: limit, members, clear };
+}
+
 const FLOW = ["new", "triaged", "assigned", "in-progress", "fixed", "integrated", "verified"];
 
 /** How Claude Code names the transcript folder of a working directory: every character but a letter or digit is a dash. */
@@ -94,6 +112,13 @@ export function normalizePlan(input, { cwd = process.cwd(), now = new Date(), le
     if (!BUDGET_ACTIONS.includes(plan.budget.onLimit)) problems.push(`budget.onLimit must be one of ${BUDGET_ACTIONS.join(", ")}, not ${plan.budget.onLimit}`);
     if (!(plan.budget.warnAt > 0 && plan.budget.warnAt < 1)) problems.push(`budget.warnAt must be a share between 0 and 1, not ${plan.budget.warnAt}`);
   } else if (plan.budget.onLimit !== undefined) problems.push("budget.onLimit needs budget.outputTokens");
+  // Context kept lean at `compactAt` tokens: subagents and headless members compact there on their own (their
+  // auto-compact window), and the lead clears an idle desktop member past it, which then resumes from the board.
+  // Claude Code takes a window of 100k to 1M tokens; 0 turns it all off.
+  plan.context ??= {};
+  plan.context.compactAt ??= COMPACT_AT;
+  const at = plan.context.compactAt;
+  if (!(at === 0 || (Number.isInteger(at) && at >= 100_000 && at <= 1_000_000))) problems.push(`context.compactAt must be a number of tokens from 100000 to 1000000, or 0 to turn it off, not ${at}`);
   plan.privacy ??= { readText: true };
   plan.board ??= {};
   plan.board.dir = path.resolve(cwd, plan.board.dir ?? path.join(".fleet", mission.slug, "board"));

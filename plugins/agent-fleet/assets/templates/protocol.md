@@ -131,4 +131,4 @@ Log times are the local clock when you write the line: read it with `date +%H:%M
 4. Only one member runs long-lived servers; kill processes by PID only, never by name.
 5. No secrets in tickets, reports or commits.
 6. Keep working until your window ends. Never sit waiting on a teammate: do other work and re-read the thread between steps; with nothing else to do, wait in bounded stretches (`Monitor` with an until-loop on the thread file, ten minutes at most), not `sleep`. Before you stop, write `reports/<id>.md`.
-7. Disagree in the thread with evidence, then follow the owner's decision.
+7. Disagree in the thread with evidence, then follow the owner's decision.{{contextRule}}

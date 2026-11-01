@@ -4,6 +4,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { catalog, modelId, PLUGIN_ROOT, skills } from "./plan.mjs";
+import { markerOf } from "./sessions.mjs";
 
 // A Windows checkout (core.autocrlf) gives the templates CRLF line ends; what we write is always LF.
 const template = (name) => fs.readFileSync(path.join(PLUGIN_ROOT, "assets", "templates", name), "utf8").replace(/\r\n?/g, "\n");
@@ -45,6 +46,7 @@ export function briefOf(fleet, agent) {
   const boss = fleet.agents.find((a) => a.id === agent.reportsTo);
   const window = agent.window ?? { from: fleet.mission.startAt, to: fleet.mission.endAt };
   return fill(template("brief.md"), {
+    marker: markerOf(fleet.mission.slug, agent.id),
     id: agent.id,
     title: agent.title,
     name: fleet.mission.name,
@@ -105,6 +107,9 @@ export function writeBoard(fleet, { makeCurrent = true } = {}) {
       base: fleet.repo.base,
       rosterCmd: rosterCmd(fleet, "<your id>"),
       sayCmd: sayCmd(fleet, "<your id>"),
+      contextRule: fleet.context?.compactAt
+        ? `\n8. The board is your memory, not your context. Every model call re-reads a member's whole context, so it is kept under ${Math.round(fleet.context.compactAt / 1000)}k tokens: subagents and headless members compact on their own, and the lead clears a desktop member that sits idle above it. When you finish a ticket, and before you end a turn, its Log says where you are and what comes next, so nothing is lost. After a compaction or a clear you get a note that begins \`Fleet member: <fleet>/<your id>\`; re-read your brief and your open tickets, then carry on.`
+        : "",
     }),
   );
   const rosterFile = path.join(dir, "ROSTER.md");
@@ -149,6 +154,8 @@ export function agentFileOf(fleet, agent) {
     agentName: agentNameOf(fleet, agent),
     description: clip(oneLine(`${agent.title} of the "${fleet.mission.name}" fleet${agent.specialty ? `: ${firstSentence(agent.specialty)}` : ""}`).replace(/:\s/g, " — "), 240).replace(/([^…])$/, "$1.") + ` Use for member ${agent.id} of this fleet.`,
     modelLine: catalog.models[agent.model] === undefined || agent.model === "inherit" ? "" : `model: ${agent.model}\n`,
+    // A subagent compacts its own context at this window, so it carries no more than `compactAt` into each step.
+    compactLine: fleet.context?.compactAt ? `autoCompactWindow: ${fleet.context.compactAt}\n` : "",
     id: agent.id,
     title: agent.title,
     name: fleet.mission.name,

@@ -13,7 +13,18 @@ Launch the current agent fleet. The fleet CLI is `node "${CLAUDE_PLUGIN_ROOT}/sc
    - **`subagent`**: use the Agent tool with `subagent_type` = `subagentType` (the member's generated agent), `description` = the entry's `description` exactly (the dashboard finds the member by it), `prompt` = the full brief text, `run_in_background: true`, and `model` = the model alias when it is not `inherit`. Project agents are loaded when a session starts: if `subagentType` is not available yet in this session, use `general-purpose` with the content of `agentFile` (without its front matter) followed by the brief as the prompt. (When the user asked for a workflow, run the `launch-fleet` workflow of this plugin with the entries instead.)
    - **`headless`**: run `fleet spawn <id>`. Ask the user first which permission mode the headless members may use (they cannot answer prompts), and pass it as `--permission-mode <mode>`.
 4. Run `fleet dashboard` (it reuses a running one) and give the user the URL as a link they can click, on a line of its own — `Dashboard: [http://localhost:4600](http://localhost:4600)` with the port it printed — never only the port number; open it in the browser pane when you have one.
-5. Offer to keep the fleet moving while the user is away: a recurring check every ~20 minutes (CronCreate, at an off-minute) that runs `fleet status --json`, reads `BOARD.md` and the tickets, wakes idle members with concrete work (SendMessage to their session id), keeps the token limit (below), and at the end time runs `/agent-fleet:wrap-up`. Only set it up on a yes. With a token limit, say that without this check the limit is only kept when you are asked for status.
+5. Offer to keep the fleet moving while the user is away: a recurring check every ~20 minutes (CronCreate, at an off-minute) that runs `fleet status --json`, reads `BOARD.md` and the tickets, wakes idle members with concrete work (SendMessage to their session id), keeps the token limit and the members' context lean (below), and at the end time runs `/agent-fleet:wrap-up`. Only set it up on a yes. With a token limit, say that without this check the limit is only kept, and desktop members only cleared, when you are asked for status.
+
+## Keeping context lean
+
+Every model call re-reads a member's whole context, so a member that carries 150k tokens from its last ticket into the next pays for them on each step. The plan keeps it under `context.compactAt` (100k tokens by default; 0 turns this off):
+
+- **Subagents** and **headless** members compact on their own at that size (their agent's `autoCompactWindow`, and `CLAUDE_CODE_AUTO_COMPACT_WINDOW` for `fleet spawn`). After a compaction, the plugin's hook gives a headless member its resume note. Nothing to do.
+- **Desktop sessions** cannot be compacted from outside, so you clear them. `fleet status --json` lists them in `context.clear`: desktop members whose turn has ended with a context over the limit. On every check, for each one:
+  1. Clear it: `clear_session` with its session id from `ROSTER.md` (only an idle session you started can be cleared; the app may ask the user to approve each clear).
+  2. Wake it: SendMessage to the same session id with the output of `fleet resume <id>` as the message, unchanged. Its first line, `Fleet member: <slug>/<id>`, lets the hook tie the new transcript to the member, so the dashboard keeps following it and its tokens still count toward the limit.
+  
+  The protocol tells members to keep each ticket's Log current before they end a turn, so a clear loses nothing. A member with a ticket `in-progress` (`context.members[].inProgress`) is cleared too: its Log is where it picks the work back up.
 
 ## Keeping the token limit
 
