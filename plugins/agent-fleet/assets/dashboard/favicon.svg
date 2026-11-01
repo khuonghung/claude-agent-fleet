@@ -1,66 +1,25 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Agent Fleet">
   <defs>
-    <linearGradient id="af-tile" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#262d3d"/>
-      <stop offset="1" stop-color="#121621"/>
+    <linearGradient id="af-tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#232b3b"/>
+      <stop offset="1" stop-color="#0e121a"/>
     </linearGradient>
-    <radialGradient id="af-gold" cx=".35" cy=".3" r=".8">
-      <stop offset="0" stop-color="#ffe08a"/>
-      <stop offset=".5" stop-color="#f7b731"/>
-      <stop offset="1" stop-color="#d98a12"/>
-    </radialGradient>
-    <radialGradient id="af-blue" cx=".35" cy=".3" r=".8">
-      <stop offset="0" stop-color="#9cc0ff"/>
-      <stop offset=".55" stop-color="#4f8cff"/>
-      <stop offset="1" stop-color="#2b5fc4"/>
-    </radialGradient>
-    <radialGradient id="af-pink" cx=".35" cy=".3" r=".8">
-      <stop offset="0" stop-color="#ffb3bb"/>
-      <stop offset=".55" stop-color="#ff6b7a"/>
-      <stop offset="1" stop-color="#d43f52"/>
-    </radialGradient>
+    <linearGradient id="af-lead" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd56b"/>
+      <stop offset="1" stop-color="#ee9f1f"/>
+    </linearGradient>
+    <!-- The two cuts that split the arrow into layers. -->
+    <mask id="af-cuts" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64">
+      <rect width="64" height="64" fill="#fff"/>
+      <path d="M14 33 L32 24 L50 33 M8 45 L32 33 L56 45" stroke="#000" stroke-width="2.6" fill="none"/>
+    </mask>
   </defs>
-  <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#af-tile)"/>
-  <rect x="2.5" y="2.5" width="59" height="59" rx="15.5" fill="none" stroke="#fff" stroke-opacity=".08"/>
-  <path d="M51 9 L52.3 12.7 L56 14 L52.3 15.3 L51 19 L49.7 15.3 L46 14 L49.7 12.7 Z" fill="#ffd166"/>
-  <circle cx="13" cy="15" r="1.4" fill="#ffd166" opacity=".7"/>
-  <ellipse cx="32" cy="58.5" rx="24" ry="2.6" fill="#000" opacity=".35"/>
-  <!-- A cat on the left, a bunny on the right, peeking from behind the chick. -->
-  <g stroke="#0e1118" stroke-opacity=".55" stroke-width="1.2" stroke-linejoin="round">
-    <path d="M5.6 39 Q4 28 8 23.5 Q12.6 26.5 14 33.5 Z M24.4 39 Q26 28 22 23.5 Q17.4 26.5 16 33.5 Z" fill="#4f8cff"/>
-    <circle cx="15" cy="43" r="10.5" fill="url(#af-blue)"/>
-    <ellipse cx="44.5" cy="27" rx="3.2" ry="8.5" transform="rotate(-10 44.5 27)" fill="#ff6b7a"/>
-    <ellipse cx="53.5" cy="27" rx="3.2" ry="8.5" transform="rotate(10 53.5 27)" fill="#ff6b7a"/>
-    <circle cx="49" cy="43" r="10.5" fill="url(#af-pink)"/>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#af-tile)"/>
+  <rect x="2.5" y="2.5" width="59" height="59" rx="13.5" fill="none" stroke="#fff" stroke-opacity=".08"/>
+  <!-- One arrow made of three layers: the lead at its tip, the members behind it, moving as one. -->
+  <g mask="url(#af-cuts)" stroke-width="1.4" stroke-linejoin="round">
+    <path d="M17.6 40.2 L32 33 L46.4 40.2 L52 52 L32 42 L12 52 Z" fill="#8b96ab" stroke="#8b96ab"/>
+    <path d="M23.3 28.4 L32 24 L40.7 28.4 L46.4 40.2 L32 33 L17.6 40.2 Z" fill="#dfe5f0" stroke="#dfe5f0"/>
+    <path d="M32 10 L40.7 28.4 L32 24 L23.3 28.4 Z" fill="url(#af-lead)" stroke="url(#af-lead)"/>
   </g>
-  <path d="M7.6 34 Q7 29 8.8 26.6 Q11.4 28.6 12.2 32 Z M22.4 34 Q23 29 21.2 26.6 Q18.6 28.6 17.8 32 Z" fill="#ffc2cc" opacity=".85"/>
-  <ellipse cx="44.5" cy="28" rx="1.4" ry="5.5" transform="rotate(-10 44.5 28)" fill="#ffc2cc"/>
-  <ellipse cx="53.5" cy="28" rx="1.4" ry="5.5" transform="rotate(10 53.5 28)" fill="#ffc2cc"/>
-  <g fill="#16161a">
-    <circle cx="10.5" cy="42" r="1.7"/>
-    <circle cx="53.5" cy="42" r="1.7"/>
-  </g>
-  <g fill="#ff8fa3" opacity=".7">
-    <ellipse cx="8" cy="46.5" rx="2.2" ry="1.4"/>
-    <ellipse cx="56" cy="46.5" rx="2.2" ry="1.4"/>
-  </g>
-  <!-- The chick in front: the lead of the fleet. -->
-  <g stroke="#0e1118" stroke-opacity=".55" stroke-width="1.2" stroke-linejoin="round">
-    <path d="M30 34 C27.5 27.5 31 24 33.7 25.6 C32.6 27.7 34.8 28.8 36.4 26 C37.6 30.4 35.2 33.6 33 34.2 Z" fill="#f7b731"/>
-    <ellipse cx="32" cy="46" rx="14" ry="13" fill="url(#af-gold)"/>
-  </g>
-  <ellipse cx="27" cy="38.5" rx="5" ry="3" fill="#fff" opacity=".35"/>
-  <g fill="#16161a">
-    <ellipse cx="26.6" cy="44.5" rx="2.5" ry="3.2"/>
-    <ellipse cx="37.4" cy="44.5" rx="2.5" ry="3.2"/>
-  </g>
-  <g fill="#fff">
-    <circle cx="27.5" cy="43.3" r="1"/>
-    <circle cx="38.3" cy="43.3" r="1"/>
-  </g>
-  <g fill="#ff8fa3" opacity=".75">
-    <ellipse cx="22.5" cy="49.5" rx="2.8" ry="1.7"/>
-    <ellipse cx="41.5" cy="49.5" rx="2.8" ry="1.7"/>
-  </g>
-  <path d="M29.6 48.4 L34.4 48.4 L32 51.6 Z" fill="#ff9f1c" stroke="#d9770b" stroke-width=".8" stroke-linejoin="round"/>
 </svg>
