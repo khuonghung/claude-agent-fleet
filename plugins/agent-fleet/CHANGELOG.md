@@ -4,6 +4,10 @@
 
 - Add members while the fleet works: `/agent-fleet:add` proposes a member the fleet needs (role, area, model, effort), shows its estimated tokens against the limit, and launches it. Under it, `fleet add <member.json> [--dry-run]` adds one member or several to `fleet.json` — the others, their session ids and the fleet's times kept — writes the new brief and agent, adds the roster rows and the protocol's roster, notes it in `NOTICES.md`, posts a heads-up on the team channel, and prints what to launch. A new member works from now to the end unless given a window; a second lead, a used id or an ended fleet are refused, and an area another builder owns is a warning. The dashboard picks the member up by itself.
 - Re-running `fleet init` adds a row to `ROSTER.md` for a member it lacks, instead of leaving the roster as it was.
+- A ticket is filed at its first Log line when that is earlier than its file's birth time, which moves whenever an editor saves by replacing the file (Windows). Tickets no longer look fixed before they were filed, the burn-up's created line no longer runs under the fixed one, and the median cycle time is no longer 0 s.
+- Verifiers are matched by whole id, as owners are: `qa` no longer counts the tickets `qa2` verifies ("fixes to verify", "verified n/m"). Owners in the member drawer and the cheer counts are matched the same way (`dev` no longer matches `dev-api`).
+- Integrated commits are counted against a real branch: the plan's new `repo.integration`, else the branch the release manager recorded in the roster. `/agent-fleet:new` names it when there is no release manager. Without one, the dashboard shows "no integration branch set yet" instead of a misleading 0, and no longer runs `git rev-list <base>..undefined`. The integration branch is read even without a slash in its name, and its commits no longer double the Code tab's count.
+- `fleet init` writes the first notice on the local clock, like every other board line, not in UTC.
 
 ## 0.4.0 — 2026-11-01
 
