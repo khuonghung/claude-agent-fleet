@@ -74,7 +74,7 @@ It reads only: each member's Claude Code transcript (sessions in `~/.claude/proj
 |---|---|
 | Plan schema, defaults, validation | `scripts/lib/plan.mjs`, `assets/role-catalog.json` |
 | Board, protocol and briefs | `scripts/lib/board-init.mjs`, `assets/templates/` |
-| CLI the commands run | `scripts/fleet.mjs` (`catalog`, `validate`, `estimate`, `init`, `launch-plan`, `brief`, `resume`, `roster`, `dashboard`, `stop`, `status`, `spawn`) |
+| CLI the commands and members run | `scripts/fleet.mjs` (`catalog`, `version`, `validate`, `estimate`, `init`, `clone`, `add`, `extend`, `doctor`, `launch-plan`, `brief`, `resume`, `roster`, `ticket`, `integrate`, `send`, `inbox`, `ack`, `say`, `dashboard`, `stop`, `status`, `spawn`); run it with no command for the usage |
 | Dashboard server (Node, no dependencies) | `scripts/server/` |
 | Dashboard (built) | `assets/dashboard/`; its source is `web/` (React + Vite) at the repository root, outside the plugin |
 | Planner agent | `agents/fleet-planner.md` — proposes the org chart, areas, models and efforts |
