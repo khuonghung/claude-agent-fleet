@@ -173,3 +173,61 @@ test("ticket set: one step at a time, by the member whose step it is, with the e
     assert.deepEqual(list.map((t) => [t.id, t.status]), [["TA-001", "verified"]]);
   });
 });
+
+test("integrate: fixed tickets become named merges; one stacked on unready work is blocked; fixes inside another merge with it", async () => {
+  await withFleet(
+    async ({ dir, boardDir, run }) => {
+      gitIn(dir, "init", "-q", "-b", "main");
+      fs.writeFileSync(path.join(dir, ".gitignore"), ".fleet/\n.claude/\n");
+      fs.writeFileSync(path.join(dir, "package.json"), "{}\n");
+      gitIn(dir, "add", "-A");
+      gitIn(dir, "commit", "-q", "-m", "init");
+      gitIn(dir, "branch", "nt-integration");
+      const commit = (file, subject) => {
+        fs.mkdirSync(path.dirname(path.join(dir, file)), { recursive: true });
+        fs.appendFileSync(path.join(dir, file), `${subject}\n`);
+        gitIn(dir, "add", "-A");
+        gitIn(dir, "commit", "-q", "-m", subject);
+        return gitIn(dir, "rev-parse", "--short=7", "HEAD");
+      };
+      gitIn(dir, "switch", "-q", "-c", "nt-dev-api");
+      const a1 = commit("apps/api/a.ts", "fix(api): DA-001 one");
+      const a2 = commit("apps/api/b.ts", "fix(api): DA-002 two");
+      const a3 = commit("apps/api/c.ts", "fix(api): DA-003 three");
+      gitIn(dir, "switch", "-q", "main");
+      gitIn(dir, "switch", "-q", "-c", "nt-dev-web");
+      const w1 = commit("apps/web/x.ts", "fix(web): DW-001 four");
+      commit("apps/web/y.ts", "chore: tidy");
+      fs.writeFileSync(path.join(dir, "package.json"), '{"x":1}\n');
+      const w2 = commit("apps/web/z.ts", "fix(web): DW-002 five");
+      gitIn(dir, "switch", "-q", "nt-integration");
+      gitIn(dir, "merge", "-q", "--no-ff", a1, "-m", "merge(api): one");
+      gitIn(dir, "switch", "-q", "main");
+      const ticket = (id, status, fix, owner) =>
+        fs.writeFileSync(path.join(boardDir, "tickets", `${id}.md`), `# ${id}: ticket ${id}\n\n- Status: ${status}\n- Owner: ${owner}\n- Fix: ${fix}\n\n## Log\n`);
+      ticket("DA-001", "fixed", `nt-dev-api @ ${a1}`, "dev-api");
+      ticket("DA-002", "deferred", `nt-dev-api @ ${a2}`, "dev-api");
+      ticket("DA-003", "fixed", `nt-dev-api @ ${a3}`, "dev-api");
+      ticket("DW-001", "fixed", `nt-dev-web @ ${w1}`, "dev-web");
+      ticket("DW-002", "fixed", `nt-dev-web @ ${w2}`, "dev-web");
+      ticket("DW-003", "fixed", "", "dev-web");
+      const r = run("integrate", "--json");
+      assert.equal(r.status, 0, r.stderr);
+      const plan = JSON.parse(r.stdout);
+      assert.equal(plan.into, "nt-integration");
+      assert.deepEqual(plan.merged.map((m) => m.id), ["DA-001"]);
+      assert.deepEqual(plan.blocked, [{ id: "DA-003", owner: "dev-api", below: [{ sha: a2, ticket: "DA-002", status: "deferred" }] }]);
+      assert.equal(plan.merges.length, 1);
+      assert.deepEqual(plan.merges[0].tickets, ["DW-001", "DW-002"]);
+      assert.equal(plan.merges[0].command, `git merge --no-ff ${w2} -m "merge(web): ticket DW-001; ticket DW-002" -m "Tickets: DW-001, DW-002"`);
+      assert.deepEqual(plan.unticketed.map((u) => u.subject), ["chore: tidy"]);
+      assert.deepEqual(plan.missing.map((m) => m.id), ["DW-003"]);
+      assert.equal(plan.fullSuite.needed, true, "package.json at the root changed");
+      const text = run("integrate", "--dry-run").stdout;
+      assert.match(text, /Nothing is merged by this command/);
+      assert.match(text, /DA-003: [0-9a-f]{7} of DA-002 \(deferred\) below its fix\. Ask dev-api to move the fix onto its own branch from nt-integration/);
+      assert.equal(gitIn(dir, "rev-parse", "--short=7", "nt-integration"), plan.head, "nothing was merged");
+    },
+    { repo: { dir: ".", base: "main", integration: "nt-integration" } },
+  );
+});

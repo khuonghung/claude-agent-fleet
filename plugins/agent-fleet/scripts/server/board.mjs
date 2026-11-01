@@ -139,7 +139,7 @@ export function parseChannel(text, stat, startAt) {
   return { updated: stat.mtime.toISOString(), posts: posts.slice(-200) };
 }
 
-function parseRoster(text) {
+export function parseRoster(text) {
   const roster = {};
   for (const line of text.split(/\r?\n/)) {
     const cells = line.split("|").map((c) => c.trim());

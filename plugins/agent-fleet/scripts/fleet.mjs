@@ -12,6 +12,7 @@
 //   fleet add <member.json> [--dry-run] adds one member (or an array) to the running fleet; prints what to launch for it
 //   fleet extend --hours N | --to T [--dry-run] moves the fleet's end later: phases, windows, briefs, agents; tells the team
 //   fleet doctor [--json]             checks before launch: node, plugin version, git, env files worktrees lack, turbo env, port
+//   fleet integrate [--dry-run] [--json] the merge plan of an integration round (read-only): fixed tickets, what each brings, commands
 //   fleet launch-plan                 what to start for each member (JSON), for /agent-fleet:launch
 //   fleet brief <member>              prints a member's brief
 //   fleet resume <member>             prints the note that restarts a member cleared to save tokens
@@ -34,10 +35,11 @@ import path from "node:path";
 import { branchOf, CHANNEL_HEAD, hhmm, launchPlan, writeAgents, writeBoard } from "./lib/board-init.mjs";
 import { CARRY, carryTickets, clonePlan, renameIntegration } from "./lib/clone.mjs";
 import { doctor } from "./lib/doctor.mjs";
+import { formatPlan, integrationPlan } from "./lib/integrate.mjs";
 import { listTickets, moveTicket, STATUSES } from "./lib/tickets.mjs";
 import { estimateFleet, memberEstimate } from "./lib/estimate.mjs";
 import { addToPlan, budgetState, catalog, contextState, extendPlan, modelId, normalizePlan, PLUGIN_ROOT, PLUGIN_VERSION, readFleet, versionNote } from "./lib/plan.mjs";
-import { normStatus } from "./server/board.mjs";
+import { normStatus, parseRoster } from "./server/board.mjs";
 import { recordSession, resumeNote } from "./lib/sessions.mjs";
 import { createTranscripts } from "./server/transcripts.mjs";
 
@@ -388,6 +390,21 @@ switch (command) {
     const busy = normStatus(to) === "in-progress" ? listTickets(fleet.board.dir).filter((t) => t.id !== id && t.status === "in-progress" && t.owner.split(/[,\s]+/).includes(by)).map((t) => t.id) : [];
     fs.writeFileSync(file, result.text);
     out({ ticket: id, from: result.from, to: normStatus(to), ...(busy.length > 0 ? { warning: `${by} has ${busy.join(", ")} in progress too: one at a time` } : {}) });
+    break;
+  }
+
+  case "integrate": {
+    // Read-only, with or without --dry-run: the round's merge plan for the release manager.
+    const fleet = readFleet(currentFleetFile());
+    const roster = parseRoster(fs.existsSync(path.join(fleet.board.dir, "ROSTER.md")) ? fs.readFileSync(path.join(fleet.board.dir, "ROSTER.md"), "utf8") : "");
+    let plan;
+    try {
+      plan = integrationPlan(fleet, roster);
+    } catch (error) {
+      fail(error.message);
+    }
+    const by = flag("by") ?? fleet.agents.find((a) => a.role === "release-manager")?.id ?? fleet.agents.find((a) => a.launch === "self")?.id;
+    out(args.includes("--json") ? plan : formatPlan(plan, { by, ticketCmd: `node "${path.join(PLUGIN_ROOT, "scripts", "fleet.mjs").replaceAll("\\", "/")}" ticket set` }));
     break;
   }
 
