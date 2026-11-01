@@ -108,6 +108,32 @@ test("init writes the board, one brief per member and the current pointer; ticke
   }
 });
 
+test("fleet init refuses to rewrite a started fleet or to replace a running one, unless --force", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "fleet-"));
+  const cli = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "scripts", "fleet.mjs");
+  const run = (...args) => spawnSync(process.execPath, [cli, ...args], { cwd: dir, encoding: "utf8" });
+  try {
+    fs.writeFileSync(path.join(dir, "plan.json"), JSON.stringify(plan()));
+    fs.writeFileSync(path.join(dir, "other.json"), JSON.stringify(plan({ mission: { name: "Day team", goal: "More", hours: 2 } })));
+    assert.equal(run("init", "plan.json").status, 0);
+    assert.equal(run("init", "plan.json").status, 0, "a fleet nobody started yet can be written again");
+    run("roster", "dev-api", "session=s-42");
+    const again = run("init", "plan.json");
+    assert.equal(again.status, 1);
+    assert.match(again.stderr, /"night-team" already exists and its members have started/);
+    assert.match(again.stderr, /--force/);
+    const other = run("init", "other.json");
+    assert.equal(other.status, 1);
+    assert.match(other.stderr, /"night-team" is still running/);
+    assert.equal(fs.readFileSync(path.join(dir, ".fleet", "current"), "utf8").trim(), "night-team", "current is left alone");
+    assert.equal(run("init", "other.json", "--force").status, 0);
+    assert.equal(fs.readFileSync(path.join(dir, ".fleet", "current"), "utf8").trim(), "day-team");
+    assert.ok(fs.existsSync(path.join(dir, ".fleet", "night-team", "board", "ROSTER.md")), "the other fleet's board stays");
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("every member gets its own branch, even under a long fleet slug", () => {
   const fleet = { mission: { slug: "kintsugi-backlog-sweep-3" } };
   const ids = ["dev-core", "dev-web", "qa", "qa2"];

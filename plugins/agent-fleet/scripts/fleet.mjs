@@ -4,7 +4,8 @@
 //   fleet catalog                     the roles, models and efforts a plan can use (JSON)
 //   fleet validate <plan.json>        checks a plan and prints it completed
 //   fleet estimate [plan.json]        output tokens per member and in total, from measured rates, and a budget
-//   fleet init <plan.json>            writes .fleet/<slug>/ (fleet.json, board, briefs, one agent per member) and makes it current
+//   fleet init <plan.json> [--force]  writes .fleet/<slug>/ (fleet.json, board, briefs, one agent per member) and makes it current;
+//                                     refuses to rewrite a started fleet or to replace a running one unless --force
 //   fleet add <member.json> [--dry-run] adds one member (or an array) to the running fleet; prints what to launch for it
 //   fleet launch-plan                 what to start for each member (JSON), for /agent-fleet:launch
 //   fleet brief <member>              prints a member's brief
@@ -75,6 +76,42 @@ function post(fleet, id, kind, text) {
   return line.trimEnd();
 }
 
+/** Whether a fleet's members have started: a session in its roster, or one recorded by the hook. */
+function launched(fleetDir) {
+  const roster = path.join(fleetDir, "board", "ROSTER.md");
+  const sessions = path.join(fleetDir, "sessions");
+  if (fs.existsSync(sessions) && fs.readdirSync(sessions).length > 0) return true;
+  if (!fs.existsSync(roster)) return false;
+  return fs.readFileSync(roster, "utf8").split(/\r?\n/).some((line) => {
+    const cells = line.split("|").map((cell) => cell.trim());
+    return cells.length > 4 && !/^-*$/.test(cells[3]) && cells[3] !== "Session id";
+  });
+}
+
+/** What `fleet init` of this plan would overwrite or take over: a started fleet of the same slug, or another one still running. */
+function initConflicts(plan) {
+  const problems = [];
+  const fleetDir = path.dirname(plan.board.dir);
+  const own = path.join(fleetDir, "fleet.json");
+  if (fs.existsSync(own) && launched(fleetDir)) {
+    problems.push(`Fleet "${plan.mission.slug}" already exists and its members have started: init would rewrite its fleet.json (their session ids, its times), briefs and agents. Tickets and reports are kept. Use a new slug for a new fleet, or /agent-fleet:add to add members.`);
+  }
+  const home = path.dirname(fleetDir);
+  const currentFile = path.join(home, "current");
+  const current = fs.existsSync(currentFile) ? fs.readFileSync(currentFile, "utf8").trim() : "";
+  if (current && current !== plan.mission.slug && fs.existsSync(path.join(home, current, "fleet.json"))) {
+    try {
+      const other = readFleet(path.join(home, current, "fleet.json"));
+      if (Date.parse(other.mission.endAt) > Date.now()) {
+        problems.push(`Fleet "${current}" is still running (until ${new Date(other.mission.endAt).toLocaleString()}): init would make "${plan.mission.slug}" the current fleet, and fleet commands and the dashboard would stop following "${current}". Wrap it up first with /agent-fleet:wrap-up. Its board stays in .fleet/${current}/ either way.`);
+      }
+    } catch {
+      // An unreadable fleet.json is not a running fleet.
+    }
+  }
+  return problems;
+}
+
 const answers = (port) =>
   new Promise((done) => {
     const socket = net.connect({ port, host: "127.0.0.1" });
@@ -101,6 +138,11 @@ switch (command) {
     if (command === "validate") {
       out(plan);
       break;
+    }
+    // Never rewrite a fleet that has started, nor take `current` from one still running, without being told to.
+    if (!args.includes("--force")) {
+      const problems = initConflicts(plan);
+      if (problems.length > 0) fail([...problems, "Pass --force to go ahead anyway."].join("\n"));
     }
     // The base branch's commit now: the dashboard warns when it moves (nobody but the owner merges into it).
     plan.repo.baseline ??= await new Promise((done) => {

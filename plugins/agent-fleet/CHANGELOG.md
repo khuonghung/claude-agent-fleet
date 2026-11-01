@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Every member gets its own branch. `fleet launch-plan` named branches `<slug>-<id>` cut to 24 characters, so a slug of 24 characters or more (`kintsugi-backlog-sweep-3`) gave every member the same branch. The id is now never cut: when `<slug>-<id>` is too long, the slug's initials stand for it (`kbs3-dev-core`). `fleet spawn` names worktrees the same way.
+- `fleet init` no longer overwrites a fleet behind the lead's back. It refuses, unless given `--force`, to rewrite a fleet of the same slug whose members have started (its `fleet.json` would lose their session ids and times), and to make a new fleet current while another is still running (fleet commands and the dashboard would stop following it). `/agent-fleet:new` puts the choice to the user.
 
 ## 0.5.0 — 2026-11-01
 
