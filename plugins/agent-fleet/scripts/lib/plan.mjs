@@ -158,6 +158,40 @@ export function normalizePlan(input, { cwd = process.cwd(), now = new Date(), le
   return plan;
 }
 
+/** A path a member owns, compared as a folder: slashes, a leading ./ and a trailing /** do not count. */
+const ownedPath = (p) => String(p).replaceAll("\\", "/").replace(/^\.\//, "").replace(/(\/\*\*?)+$/, "").replace(/\/+$/, "");
+const overlaps = (a, b) => a === b || a.startsWith(`${b}/`) || b.startsWith(`${a}/`);
+
+/**
+ * Adds members to a fleet that is already running: the fleet as it is (its start, members and session ids kept) plus the
+ * new ones, completed and checked as a plan is. A new member works from now (or the start, if it is still ahead) to the
+ * end unless it brings its own window. Paths it owns that another builder owns are warnings, not errors: a handover or
+ * a swarm may share them on purpose, and the lead settles it with the user.
+ */
+export function addToPlan(fleet, members, { now = new Date(), lead } = {}) {
+  const list = Array.isArray(members) ? members : [members];
+  if (list.length === 0) throw new Error("no member to add");
+  const end = Date.parse(fleet.mission.endAt);
+  if (!(now.getTime() < end)) throw new Error(`the fleet ended at ${fleet.mission.endAt}: there is no time left to add a member`);
+  const from = new Date(Math.floor(Math.max(now.getTime(), Date.parse(fleet.mission.startAt)) / 60_000) * 60_000).toISOString();
+  const added = list.map((member) => {
+    if (member?.role === "lead" || member?.launch === "self") throw new Error(`${member.id ?? "a member"}: a fleet has one lead, and it has one already`);
+    return { ...member, window: member.window ?? { from, to: fleet.mission.endAt } };
+  });
+  const plan = normalizePlan({ ...fleet, agents: [...fleet.agents, ...added] }, { now, lead });
+  const ids = new Set(added.map((a) => a.id));
+  const warnings = [];
+  for (const agent of plan.agents.filter((a) => ids.has(a.id))) {
+    for (const other of plan.agents.filter((a) => a.id !== agent.id && !a.readOnly)) {
+      for (const mine of agent.owns) {
+        const theirs = other.owns.find((p) => overlaps(ownedPath(mine), ownedPath(p)));
+        if (theirs !== undefined && (!ids.has(other.id) || agent.id < other.id)) warnings.push(`${agent.id} owns ${mine}, which overlaps ${other.id}'s ${theirs}`);
+      }
+    }
+  }
+  return { plan, added: plan.agents.filter((a) => ids.has(a.id)), warnings };
+}
+
 /** A model alias as the id a session is started with ("" for inherit). */
 export const modelId = (model) => catalog.models[model]?.id ?? model;
 

@@ -63,7 +63,18 @@ export function briefOf(fleet, agent) {
   });
 }
 
-export function writeBoard(fleet) {
+/** A roster that already exists keeps its rows (members fill them); a member it lacks gets a row after the last one. */
+function addRosterRows(file, agents) {
+  const lines = fs.readFileSync(file, "utf8").split("\n");
+  const have = new Set(lines.map((line) => line.split("|")[1]?.trim()));
+  const rows = agents.filter((a) => !have.has(a.id)).map((a) => `| ${a.id} | ${a.title} |  |  |  |`);
+  if (rows.length === 0) return;
+  const last = lines.findLastIndex((line) => line.startsWith("|"));
+  lines.splice(last < 0 ? lines.length : last + 1, 0, ...rows);
+  fs.writeFileSync(file, lines.join("\n"));
+}
+
+export function writeBoard(fleet, { makeCurrent = true } = {}) {
   const dir = fleet.board.dir;
   const fleetDir = path.dirname(dir);
   for (const sub of ["tickets", "threads", "reports", "briefs"]) fs.mkdirSync(path.join(dir, sub), { recursive: true });
@@ -94,16 +105,15 @@ export function writeBoard(fleet) {
       sayCmd: sayCmd(fleet, "<your id>"),
     }),
   );
-  writeIfMissing(
-    path.join(dir, "ROSTER.md"),
-    ["# Roster", "", "Each member edits only their own row.", "", "| Name | Role | Session id | Worktree | Branch |", "|---|---|---|---|---|", ...fleet.agents.map((a) => `| ${a.id} | ${a.title} |  |  |  |`), ""].join("\n"),
-  );
+  const rosterFile = path.join(dir, "ROSTER.md");
+  if (fs.existsSync(rosterFile)) addRosterRows(rosterFile, fleet.agents);
+  else fs.writeFileSync(rosterFile, ["# Roster", "", "Each member edits only their own row.", "", "| Name | Role | Session id | Worktree | Branch |", "|---|---|---|---|---|", ...fleet.agents.map((a) => `| ${a.id} | ${a.title} |  |  |  |`), ""].join("\n"));
   writeIfMissing(path.join(dir, "BOARD.md"), `# Board\n\nStack: not running\n\nNo tickets yet.\n`);
   writeIfMissing(path.join(dir, "CHANNEL.md"), CHANNEL_HEAD);
   writeIfMissing(path.join(dir, "NOTICES.md"), `# Notices\n\n- ${new Date().toISOString().slice(11, 16)} lead: fleet "${fleet.mission.name}" planned.\n`);
   for (const agent of fleet.agents) fs.writeFileSync(path.join(dir, "briefs", `${agent.id}.md`), briefOf(fleet, agent));
   fs.writeFileSync(path.join(fleetDir, "fleet.json"), `${JSON.stringify(fleet, null, 2)}\n`);
-  fs.writeFileSync(path.join(path.dirname(fleetDir), "current"), `${fleet.mission.slug}\n`);
+  if (makeCurrent) fs.writeFileSync(path.join(path.dirname(fleetDir), "current"), `${fleet.mission.slug}\n`);
   return { fleetFile: path.join(fleetDir, "fleet.json"), boardDir: dir };
 }
 

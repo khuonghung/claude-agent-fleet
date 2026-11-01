@@ -7,7 +7,7 @@ import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { agentFileOf, briefOf, launchPlan, prefixes, writeAgents, writeBoard } from "../scripts/lib/board-init.mjs";
-import { codeOf, defaultPhases, normalizePlan, readFleet, slugOf, transcriptFolderOf } from "../scripts/lib/plan.mjs";
+import { addToPlan, codeOf, defaultPhases, normalizePlan, readFleet, slugOf, transcriptFolderOf } from "../scripts/lib/plan.mjs";
 
 const plan = (extra = {}) => ({
   mission: { name: "Night team", goal: "Fix what the QA found", hours: 4 },
@@ -293,6 +293,69 @@ test("fleet dashboard prints its URL on a line of its own, says when it was alre
     assert.deepEqual(JSON.parse(json.stdout), { url: `http://localhost:${port}`, port, running: true, reused: true });
   } finally {
     spawnSync(process.execPath, [cli, "stop", "--fleet", path.join(dir, ".fleet", "night-team")], { cwd: dir });
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("a member added mid-mission works from now to the end; an area another builder owns is a warning; a second lead or an ended fleet is refused", () => {
+  const p = normalizePlan(plan(), { cwd: "/repo", now: new Date("2026-11-01T00:00:00Z") });
+  const now = new Date("2026-11-01T01:30:45Z");
+  const { plan: next, added, warnings } = addToPlan(p, { id: "dev-web", role: "developer", reportsTo: "po", owns: ["./apps/api/**", "apps/web"] }, { now });
+  assert.deepEqual(next.agents.map((a) => a.id), ["lead", "po", "dev-api", "test-api", "dev-web"]);
+  assert.equal(next.mission.startAt, p.mission.startAt);
+  assert.deepEqual(added[0].window, { from: "2026-11-01T01:30:00.000Z", to: p.mission.endAt });
+  assert.equal(added[0].model, "opus");
+  assert.equal(added[0].match.title, "NT · dev-web");
+  assert.deepEqual(warnings, ["dev-web owns ./apps/api/**, which overlaps dev-api's apps/api"]);
+  assert.deepEqual(addToPlan(p, { id: "dev-x", role: "developer", owns: ["apps/api-x"] }, { now }).warnings, []);
+  assert.throws(() => addToPlan(p, { id: "boss", role: "lead" }, { now }), /one lead/);
+  assert.throws(() => addToPlan(p, { id: "dev-api", role: "developer" }, { now }), /used twice/);
+  assert.throws(() => addToPlan(p, { id: "late", role: "tester" }, { now: new Date("2026-11-01T05:00:00Z") }), /ended/);
+});
+
+test("fleet add joins a running fleet: everything else kept, the member's brief, agent and roster row written, the team told", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "fleet-"));
+  const cli = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "scripts", "fleet.mjs");
+  try {
+    const { fleetFile, boardDir } = writeBoard(normalizePlan(plan(), { cwd: dir }));
+    const fleetDir = path.dirname(boardDir);
+    const run = (...extra) => spawnSync(process.execPath, [cli, ...extra, "--fleet", fleetDir], { cwd: dir, encoding: "utf8" });
+    // A fleet already at work: a member has recorded its session, and another fleet is the current one.
+    assert.equal(run("roster", "dev-api", "session=s-42").status, 0);
+    const running = JSON.parse(fs.readFileSync(fleetFile, "utf8"));
+    running.agents.find((a) => a.id === "dev-api").match.sessionId = "s-42";
+    fs.writeFileSync(fleetFile, JSON.stringify(running, null, 2));
+    fs.writeFileSync(path.join(dir, ".fleet", "current"), "other-fleet\n");
+    const member = path.join(dir, "member.json");
+    fs.writeFileSync(member, JSON.stringify({ id: "qa-web", role: "tester", reportsTo: "po", specialty: "The portal's checkout flow." }));
+
+    const dry = run("add", member, "--dry-run");
+    assert.equal(dry.status, 0, dry.stderr);
+    assert.equal(JSON.parse(dry.stdout).members[0].id, "qa-web");
+    assert.equal(JSON.parse(fs.readFileSync(fleetFile, "utf8")).agents.length, 4, "a dry run writes nothing");
+
+    const added = run("add", member);
+    assert.equal(added.status, 0, added.stderr);
+    const result = JSON.parse(added.stdout);
+    assert.deepEqual(result.added, ["qa-web"]);
+    assert.equal(result.launch[0].title, "NT · qa-web");
+    const fleet = JSON.parse(fs.readFileSync(fleetFile, "utf8"));
+    assert.deepEqual(fleet.agents.map((a) => a.id), ["lead", "po", "dev-api", "test-api", "qa-web"]);
+    assert.equal(fleet.mission.startAt, running.mission.startAt);
+    assert.equal(fleet.agents.find((a) => a.id === "dev-api").match.sessionId, "s-42");
+    const roster = fs.readFileSync(path.join(boardDir, "ROSTER.md"), "utf8");
+    assert.match(roster, /\| dev-api \| Developer \| s-42 \|/);
+    assert.match(roster, /\| test-api \| Tester \|  \|  \|  \|\n\| qa-web \| Tester \|  \|  \|  \|\n/);
+    assert.match(fs.readFileSync(path.join(boardDir, "README.md"), "utf8"), /\| qa-web \| Tester \| quality \| po \|/);
+    assert.match(fs.readFileSync(path.join(boardDir, "briefs", "qa-web.md"), "utf8"), /checkout flow/);
+    assert.ok(fs.existsSync(path.join(fleetDir, "agents", "qa-web.md")));
+    assert.match(fs.readFileSync(path.join(boardDir, "NOTICES.md"), "utf8"), /lead: qa-web \(Tester\) joined the fleet, reports to po\.\n$/);
+    assert.match(fs.readFileSync(path.join(boardDir, "CHANNEL.md"), "utf8"), /lead · heads-up: qa-web \(Tester\) joined the fleet, reports to po\. Brief: briefs\/qa-web\.md\n$/);
+    assert.equal(fs.readFileSync(path.join(dir, ".fleet", "current"), "utf8"), "other-fleet\n");
+    const again = run("add", member);
+    assert.notEqual(again.status, 0);
+    assert.match(again.stderr, /used twice/);
+  } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });

@@ -5,6 +5,7 @@
 //   fleet validate <plan.json>        checks a plan and prints it completed
 //   fleet estimate [plan.json]        output tokens per member and in total, from measured rates, and a budget
 //   fleet init <plan.json>            writes .fleet/<slug>/ (fleet.json, board, briefs, one agent per member) and makes it current
+//   fleet add <member.json> [--dry-run] adds one member (or an array) to the running fleet; prints what to launch for it
 //   fleet launch-plan                 what to start for each member (JSON), for /agent-fleet:launch
 //   fleet brief <member>              prints a member's brief
 //   fleet roster <member> <key=value> records a member's session id, worktree or branch in ROSTER.md
@@ -21,8 +22,8 @@ import http from "node:http";
 import net from "node:net";
 import path from "node:path";
 import { CHANNEL_HEAD, launchPlan, writeAgents, writeBoard } from "./lib/board-init.mjs";
-import { estimateFleet } from "./lib/estimate.mjs";
-import { budgetState, catalog, modelId, normalizePlan, PLUGIN_ROOT, readFleet } from "./lib/plan.mjs";
+import { estimateFleet, memberEstimate } from "./lib/estimate.mjs";
+import { addToPlan, budgetState, catalog, modelId, normalizePlan, PLUGIN_ROOT, readFleet } from "./lib/plan.mjs";
 import { normStatus } from "./server/board.mjs";
 import { createTranscripts } from "./server/transcripts.mjs";
 
@@ -62,6 +63,18 @@ const leadOf = () => {
     return undefined;
   }
 };
+
+const hhmm = (at = new Date()) => `${String(at.getHours()).padStart(2, "0")}:${String(at.getMinutes()).padStart(2, "0")}`;
+
+/** Posts one line to the team channel: the clock's time, one append per post, so posts at the same moment never erase each other. */
+function post(fleet, id, kind, text) {
+  const file = path.join(fleet.board.dir, "CHANNEL.md");
+  if (!fs.existsSync(file)) fs.writeFileSync(file, CHANNEL_HEAD);
+  const line = `- ${hhmm()} ${id} · ${kind}: ${text}
+`;
+  fs.appendFileSync(file, line);
+  return line.trimEnd();
+}
 
 const answers = (port) =>
   new Promise((done) => {
@@ -109,6 +122,39 @@ switch (command) {
       if (missing.length > 0) fs.appendFileSync(exclude, `\n# agent-fleet working files\n${missing.join("\n")}\n`);
     }
     out({ ...written, agentsDir: agents.dir, installedAgents: agents.installed, slug: plan.mission.slug, members: plan.agents.length, startAt: plan.mission.startAt, endAt: plan.mission.endAt });
+    break;
+  }
+
+  case "add": {
+    const fleetFile = currentFleetFile();
+    const fleet = readFleet(fleetFile);
+    const file = args.find((a, i) => !a.startsWith("--") && args[i - 1] !== "--fleet");
+    if (file === undefined) fail("usage: fleet add <member.json> [--dry-run]  (one member object, or an array of them)");
+    let result;
+    try {
+      result = addToPlan(fleet, JSON.parse(fs.readFileSync(file, "utf8")), { lead: leadOf() });
+    } catch (error) {
+      fail(error.message);
+    }
+    const { plan, added, warnings } = result;
+    const estimate = added.map((a) => memberEstimate(plan, a));
+    if (args.includes("--dry-run")) {
+      out({ members: added, warnings, estimate });
+      break;
+    }
+    // The fleet keeps its folder and whether it is the current one; the dashboard re-reads fleet.json by itself.
+    writeBoard(plan, { makeCurrent: false });
+    writeAgents(plan);
+    const leadId = plan.agents.find((a) => a.launch === "self")?.id ?? "owner";
+    for (const a of added) {
+      const boss = a.reportsTo === undefined ? "" : `, reports to ${a.reportsTo}`;
+      const area = a.owns.length > 0 ? `, owns ${a.owns.join(", ")}` : "";
+      fs.appendFileSync(path.join(plan.board.dir, "NOTICES.md"), `- ${hhmm()} ${leadId}: ${a.id} (${a.title}) joined the fleet${boss}${area}.
+`);
+      post(plan, leadId, "heads-up", `${a.id} (${a.title}) joined the fleet${boss}${area}. Brief: briefs/${a.id}.md`);
+    }
+    const ids = new Set(added.map((a) => a.id));
+    out({ added: [...ids], warnings, estimate, launch: launchPlan(plan).filter((entry) => ids.has(entry.id)) });
     break;
   }
 
@@ -182,13 +228,7 @@ switch (command) {
     // One line, whatever the shell passed: the channel is read a line at a time.
     const text = words.join(" ").replace(/\s+/g, " ").trim().slice(0, 400);
     if (text === "") fail("say what? the text is empty");
-    const file = path.join(fleet.board.dir, "CHANNEL.md");
-    if (!fs.existsSync(file)) fs.writeFileSync(file, CHANNEL_HEAD);
-    // The clock's time, not one the member writes; one append per post, so posts at the same moment never erase each other.
-    const now = new Date();
-    const line = `- ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")} ${id} · ${kind}: ${text}\n`;
-    fs.appendFileSync(file, line);
-    out(line.trimEnd());
+    out(post(fleet, id, kind, text));
     break;
   }
 
