@@ -25,13 +25,15 @@ Plan the team with Claude, launch it in one command, and follow every agent, tic
 
 ## Why
 
-One Claude Code session is great at one task. Real goals — *"harden the API and fix what QA finds by morning"* — need a product owner who triages, builders who own separate areas, testers who verify on the integrated code, a release manager who merges, and someone watching the clock. Agent Fleet gives you that team:
+One Claude Code session works on one thing at a time, in one context. Bigger goals do not fit that shape — a feature that spans several packages, a backlog to burn down, an audit, a migration, a bug hunt across a codebase. They need the work split into pieces with an owner for each, someone who decides what matters, someone who checks the result against what was asked, someone who puts the pieces together, and someone who watches the clock and the cost. Agent Fleet gives you that team, whatever the goal:
 
-- **You plan it together.** Claude proposes the org chart, each member's specialty and area, the model and effort per member, the time window and a token limit — you confirm or change every part.
+- **Shaped to the goal.** Claude proposes the roles the work needs — planning, building, testing, reviewing, research, writing, operations — with each member's specialty and area, the model and effort per member, a time window and a token limit. You confirm or change every part, and can add members while the fleet works.
 - **They work like a team.** A shared board in plain Markdown: one ticket per issue with acceptance criteria, discussions with an owner who decides, one owner per file, and nothing called "done" without the command and its output.
 - **You see everything.** A live dashboard reads the agents' own transcripts, the board and git: who is running which tool, what each one said last, tickets flowing to verified, tokens against the limit, and what needs you.
 
-Nothing is pushed and no pull request is opened: members commit on their own branches, a release manager integrates them, and you review the result.
+**Built on nested sessions.** Since [14 October 2026](https://x.com/ClaudeDevs/status/2110445844675838148) the Claude Code desktop app lets a session start other sessions, nested under it in the sidebar: each has its own context, works in parallel, reports back when it is done, and can be opened, steered or stopped like any session. That is the raw material of a team — but parallel sessions alone share no plan, no board and no idea of what "done" means. Agent Fleet turns them into one: the lead's session starts a nested session per member, with its role, brief, model and effort, and the board, the rules and the dashboard keep them all working toward one goal. Without the desktop app, members run as background subagents or headless `claude -p` processes instead.
+
+Nothing is pushed and no pull request is opened: members commit on their own branches, their work is merged into one integration branch, and you review the result.
 
 ## Install
 
