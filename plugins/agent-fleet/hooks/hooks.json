@@ -1,5 +1,5 @@
 {
-  "description": "Agent Fleet: tell a session in a project with an active fleet where its board is (after a compaction, a member gets its resume note: who it is and its open tickets), remember which session planned and launched it (the lead), and record each member's sessions from the marker in its brief, so the dashboard follows a member cleared to save tokens.",
+  "description": "Agent Fleet: tell a session in a project with an active fleet where its board is (and when its plugin is older than the fleet's) (after a compaction, a member gets its resume note: who it is and its open tickets), remember which session planned and launched it (the lead), and record each member's sessions from the marker in its brief, so the dashboard follows a member cleared to save tokens.",
   "hooks": {
     "SessionStart": [
       {

@@ -304,7 +304,7 @@ test("a Windows checkout (CRLF templates and skills) still writes LF agents, bri
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "fleet-"));
   try {
     // The plugin as core.autocrlf checks it out: every text file with CRLF line ends.
-    for (const sub of ["scripts", "assets", "skills"]) fs.cpSync(path.join(pluginRoot, sub), path.join(copy, sub), { recursive: true });
+    for (const sub of ["scripts", "assets", "skills", ".claude-plugin"]) fs.cpSync(path.join(pluginRoot, sub), path.join(copy, sub), { recursive: true });
     for (const file of fs.readdirSync(copy, { recursive: true }).map((f) => path.join(copy, f))) {
       if (/\.(md|mjs|json)$/.test(file)) fs.writeFileSync(file, fs.readFileSync(file, "utf8").replace(/\r?\n/g, "\r\n"));
     }

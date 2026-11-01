@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- A fleet knows which plugin wrote it. Every write (`fleet init`, `add`, `extend`) stamps `plugin.version` in `fleet.json`, since the briefs it writes call that version's CLI. A session on an older plugin is told to update and restart — by the session-start hook and by a warning on every fleet command — instead of running a protocol that names commands it does not have. `fleet version` prints both versions.
+
 ## 0.6.0 — 2026-11-01
 
 - A more professional logo: one flat arrow in three layers — the lead at its gold tip, the members behind it in silver and slate — on a dark tile, replacing the mascot trio. It is still, with no blinking or twinkle, in the dashboard header, the loading screen, the favicon and the README.

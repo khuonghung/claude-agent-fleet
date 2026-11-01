@@ -3,7 +3,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { catalog, modelId, PLUGIN_ROOT, skills } from "./plan.mjs";
+import { catalog, modelId, PLUGIN_ROOT, PLUGIN_VERSION, skills } from "./plan.mjs";
 import { markerOf } from "./sessions.mjs";
 
 // A Windows checkout (core.autocrlf) gives the templates CRLF line ends; what we write is always LF.
@@ -119,6 +119,8 @@ export function writeBoard(fleet, { makeCurrent = true } = {}) {
   writeIfMissing(path.join(dir, "CHANNEL.md"), CHANNEL_HEAD);
   writeIfMissing(path.join(dir, "NOTICES.md"), `# Notices\n\n- ${hhmm()} lead: fleet "${fleet.mission.name}" planned.\n`);
   for (const agent of fleet.agents) fs.writeFileSync(path.join(dir, "briefs", `${agent.id}.md`), briefOf(fleet, agent));
+  // The briefs just written call this plugin's CLI: the fleet now needs this version at least.
+  fleet.plugin = { ...fleet.plugin, version: PLUGIN_VERSION };
   fs.writeFileSync(path.join(fleetDir, "fleet.json"), `${JSON.stringify(fleet, null, 2)}\n`);
   if (makeCurrent) fs.writeFileSync(path.join(path.dirname(fleetDir), "current"), `${fleet.mission.slug}\n`);
   return { fleetFile: path.join(fleetDir, "fleet.json"), boardDir: dir };

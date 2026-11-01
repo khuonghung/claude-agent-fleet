@@ -2,7 +2,8 @@
 // Agent Fleet hook. Reads the hook input (JSON on stdin) and never fails the session: any problem is silent.
 //
 //   session-start  prints one short note when the session's folder (or a parent: a member's worktree) has an active
-//                  fleet, so a member knows where its board and protocol are. After a compaction (source "compact")
+//                  fleet, so a member knows where its board and protocol are, and says so when this session's plugin is
+//                  older than the one that wrote the fleet. After a compaction (source "compact")
 //                  of a known member's session, prints that member's resume note instead: who it is, its open tickets.
 //   prompt         when the prompt starts /agent-fleet:new or /agent-fleet:launch, remembers this session as the
 //                  fleet's lead (.fleet/lead.json: its session id and transcript), so the dashboard follows it too.
@@ -11,6 +12,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { versionNote } from "../scripts/lib/plan.mjs";
 import { memberOfPrompt, memberOfSession, recordSession, resumeNote } from "../scripts/lib/sessions.mjs";
 
 const mode = process.argv[2];
@@ -52,6 +54,11 @@ try {
       const fleet = JSON.parse(fs.readFileSync(path.join(home, slug, "fleet.json"), "utf8"));
       const end = Date.parse(fleet.mission?.endAt ?? "");
       if (Number.isFinite(end) && Date.now() < end) {
+        // A session on an older plugin than the fleet's is told first: the commands its brief names may be missing.
+        const note = versionNote(fleet);
+        if (note) process.stdout.write(`${note}
+
+`);
         const member = input.source === "compact" ? memberOfSession(fleet, path.join(home, slug), input.session_id) : undefined;
         if (member !== undefined) {
           process.stdout.write(resumeNote(fleet, member, { reason: "compacted" }));

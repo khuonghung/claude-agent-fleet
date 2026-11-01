@@ -2,6 +2,7 @@
 // The agent-fleet CLI: what the plugin's commands run. Node only, no dependencies.
 //
 //   fleet catalog                     the roles, models and efforts a plan can use (JSON)
+//   fleet version                     this CLI's version and the one that last wrote the current fleet (JSON)
 //   fleet validate <plan.json>        checks a plan and prints it completed
 //   fleet estimate [plan.json]        output tokens per member and in total, from measured rates, and a budget
 //   fleet init <plan.json> [--force]  writes .fleet/<slug>/ (fleet.json, board, briefs, one agent per member) and makes it current;
@@ -26,7 +27,7 @@ import net from "node:net";
 import path from "node:path";
 import { branchOf, CHANNEL_HEAD, hhmm, launchPlan, writeAgents, writeBoard } from "./lib/board-init.mjs";
 import { estimateFleet, memberEstimate } from "./lib/estimate.mjs";
-import { addToPlan, budgetState, catalog, contextState, extendPlan, modelId, normalizePlan, PLUGIN_ROOT, readFleet } from "./lib/plan.mjs";
+import { addToPlan, budgetState, catalog, contextState, extendPlan, modelId, normalizePlan, PLUGIN_ROOT, PLUGIN_VERSION, readFleet, versionNote } from "./lib/plan.mjs";
 import { normStatus } from "./server/board.mjs";
 import { recordSession, resumeNote } from "./lib/sessions.mjs";
 import { createTranscripts } from "./server/transcripts.mjs";
@@ -52,11 +53,23 @@ function fleetHome(from = process.cwd()) {
 
 function currentFleetFile() {
   const explicit = flag("fleet");
-  if (explicit !== undefined) return fs.statSync(explicit).isDirectory() ? path.join(explicit, "fleet.json") : path.resolve(explicit);
+  if (explicit !== undefined) return warnIfOlder(fs.statSync(explicit).isDirectory() ? path.join(explicit, "fleet.json") : path.resolve(explicit));
   const home = fleetHome();
   const slug = home && fs.existsSync(path.join(home, "current")) ? fs.readFileSync(path.join(home, "current"), "utf8").trim() : undefined;
   if (home === undefined || slug === undefined) fail("No fleet here: plan one with /agent-fleet:new (or pass --fleet <dir>).");
-  return path.join(home, slug, "fleet.json");
+  return warnIfOlder(path.join(home, slug, "fleet.json"));
+}
+
+/** Says on stderr when this CLI is older than the plugin that last wrote the fleet; returns the file unchanged. */
+function warnIfOlder(file) {
+  try {
+    const note = versionNote(JSON.parse(fs.readFileSync(file, "utf8")));
+    if (note) process.stderr.write(`warning: ${note}
+`);
+  } catch {
+    // An unreadable fleet.json fails where it is read.
+  }
+  return file;
 }
 
 const leadOf = () => {
@@ -125,6 +138,20 @@ switch (command) {
   case "catalog":
     out(catalog);
     break;
+
+  case "version": {
+    // This CLI's version, and the one that last wrote the current fleet, when there is one.
+    const home = fleetHome();
+    const slug = home && fs.existsSync(path.join(home, "current")) ? fs.readFileSync(path.join(home, "current"), "utf8").trim() : undefined;
+    let fleet;
+    try {
+      fleet = slug === undefined ? undefined : JSON.parse(fs.readFileSync(path.join(home, slug, "fleet.json"), "utf8"));
+    } catch {
+      fleet = undefined;
+    }
+    out({ cli: PLUGIN_VERSION, fleet: fleet?.plugin?.version ?? null, slug: slug ?? null, note: versionNote(fleet) ?? null });
+    break;
+  }
 
   case "validate":
   case "init": {

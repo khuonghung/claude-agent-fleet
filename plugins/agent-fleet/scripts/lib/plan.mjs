@@ -9,6 +9,26 @@ import { fileURLToPath } from "node:url";
 
 export const PLUGIN_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 export const catalog = JSON.parse(fs.readFileSync(path.join(PLUGIN_ROOT, "assets", "role-catalog.json"), "utf8"));
+/** This plugin's version: stamped into every fleet it writes, so a session on an older plugin can be told. */
+export const PLUGIN_VERSION = JSON.parse(fs.readFileSync(path.join(PLUGIN_ROOT, ".claude-plugin", "plugin.json"), "utf8")).version;
+
+/** Compares two "x.y.z" versions: negative when `a` is older, 0 when equal, positive when newer. */
+export function compareVersions(a, b) {
+  const pa = String(a).split(".").map(Number);
+  const pb = String(b).split(".").map(Number);
+  for (let i = 0; i < 3; i++) if ((pa[i] || 0) !== (pb[i] || 0)) return (pa[i] || 0) - (pb[i] || 0);
+  return 0;
+}
+
+/**
+ * What to tell a session whose plugin is older than the one that last wrote the fleet: its commands and protocol may
+ * lack what the briefs ask for. Nothing when it is the same or newer, or the fleet has no stamp (made before 0.7.0).
+ */
+export function versionNote(fleet, mine = PLUGIN_VERSION) {
+  const theirs = fleet?.plugin?.version;
+  if (!theirs || compareVersions(mine, theirs) >= 0) return undefined;
+  return `This session runs agent-fleet ${mine}, but the fleet "${fleet.mission?.slug}" was written by ${theirs}: commands its briefs and protocol use may be missing here. Update the plugin (\`claude plugin marketplace update agent-fleet\`, then reinstall \`agent-fleet@agent-fleet\`) and start a new session.`;
+}
 
 /** The plugin's skills (`skills/<name>/SKILL.md`), by name, with the description from their front matter. */
 export const skills = Object.fromEntries(
