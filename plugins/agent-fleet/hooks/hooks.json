@@ -1,0 +1,15 @@
+{
+  "description": "Agent Fleet: tell a session in a project with an active fleet where its board is, and remember which session planned and launched it (the lead), so the dashboard can follow the lead too.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/fleet-context.mjs\" session-start", "timeout": 10 }]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/fleet-context.mjs\" prompt", "timeout": 10 }]
+      }
+    ]
+  }
+}

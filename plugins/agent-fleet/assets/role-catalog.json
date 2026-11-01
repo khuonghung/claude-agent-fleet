@@ -1,0 +1,342 @@
+{
+  "models": {
+    "opus": {
+      "id": "claude-opus-5-5",
+      "name": "Claude Opus 5.5",
+      "label": "Opus 5.5",
+      "use": "design, hard code changes, security review, careful testing"
+    },
+    "sonnet": {
+      "id": "claude-sonnet-5-5",
+      "name": "Claude Sonnet 5.5",
+      "label": "Sonnet 5.5",
+      "use": "coordination, integration, documentation, routine testing"
+    },
+    "haiku": {
+      "id": "claude-haiku-5-5",
+      "name": "Claude Haiku 5.5",
+      "label": "Haiku 5.5",
+      "use": "mechanical, well-specified, high-volume tasks"
+    },
+    "inherit": {
+      "id": "",
+      "name": "Inherit",
+      "label": "Inherit",
+      "use": "the model of the session that launches the fleet (the lead)"
+    }
+  },
+  "efforts": [
+    "low",
+    "medium",
+    "high",
+    "xhigh",
+    "max"
+  ],
+  "squads": [
+    {
+      "id": "command",
+      "name": "Command",
+      "note": "Direction, priorities, coordination"
+    },
+    {
+      "id": "build",
+      "name": "Build",
+      "note": "Change the code on their own branches"
+    },
+    {
+      "id": "quality",
+      "name": "Quality",
+      "note": "Find, file and verify problems"
+    }
+  ],
+  "roles": {
+    "lead": {
+      "title": "Fleet lead",
+      "squad": "command",
+      "model": "inherit",
+      "effort": "high",
+      "launch": "self",
+      "worktree": false,
+      "readOnly": false,
+      "mascot": {
+        "shape": "bean",
+        "color": "#f2b53a",
+        "eyes": "dots",
+        "accessory": "crown"
+      },
+      "duties": "You are the session that planned and launched the fleet. Keep the board honest, wake idle members with concrete work, watch the clock and the token limit (act on it as the user chose: warn, wrap up or stop), and write the final summary for the owner.",
+      "skills": [
+        "decompose-goal",
+        "dispatch-work",
+        "discuss-and-decide",
+        "team-communication",
+        "status-report"
+      ]
+    },
+    "product-owner": {
+      "title": "Product owner",
+      "squad": "command",
+      "model": "opus",
+      "effort": "high",
+      "launch": "session",
+      "worktree": false,
+      "readOnly": true,
+      "mascot": {
+        "shape": "cloud",
+        "color": "#2f7cf6",
+        "eyes": "dots",
+        "accessory": "beret"
+      },
+      "duties": "Own the goal. Triage every ticket within 15 minutes (severity, decision: do now / defer / won't do, 2-5 testable acceptance criteria). Keep the scope realistic for the time left. Accept or reject finished work against its criteria, and write the product report: what was promised, what works, the top risks and the next backlog.",
+      "skills": [
+        "decompose-goal",
+        "write-ticket",
+        "triage-tickets",
+        "discuss-and-decide",
+        "team-communication",
+        "status-report"
+      ]
+    },
+    "delivery-lead": {
+      "title": "Delivery lead",
+      "squad": "command",
+      "model": "sonnet",
+      "effort": "medium",
+      "launch": "session",
+      "worktree": false,
+      "readOnly": true,
+      "mascot": {
+        "shape": "gumdrop",
+        "color": "#ff8a3d",
+        "eyes": "dots",
+        "accessory": "headset"
+      },
+      "duties": "Own the flow. Assign triaged tickets to builders by ownership, keep each builder with one ticket in progress and one or two queued, never let two builders touch the same files, nudge anyone idle, enforce the timeline (freeze, reports) and write FINAL-REPORT.md for the owner.",
+      "skills": [
+        "dispatch-work",
+        "triage-tickets",
+        "swarm-ticket",
+        "discuss-and-decide",
+        "team-communication",
+        "status-report"
+      ]
+    },
+    "release-manager": {
+      "title": "Release manager",
+      "squad": "command",
+      "model": "sonnet",
+      "effort": "medium",
+      "launch": "session",
+      "worktree": true,
+      "readOnly": false,
+      "mascot": {
+        "shape": "bean",
+        "color": "#18c3b0",
+        "eyes": "dots",
+        "accessory": "hardhat"
+      },
+      "duties": "Your worktree branch is the integration branch. Run the baseline checks, then every ~30 minutes merge the builders' branches (never rebase or touch their branches, never the base branch, never push), run the checks, mark merged tickets `integrated` and tell the verifiers. Kill processes only by PID.",
+      "skills": [
+        "integrate-branches",
+        "verify-before-done",
+        "team-communication",
+        "status-report"
+      ]
+    },
+    "architect": {
+      "title": "Architect",
+      "squad": "build",
+      "model": "opus",
+      "effort": "xhigh",
+      "launch": "session",
+      "worktree": true,
+      "readOnly": false,
+      "mascot": {
+        "shape": "dome",
+        "color": "#a78bfa",
+        "eyes": "googly",
+        "accessory": "glasses"
+      },
+      "duties": "Own the design of cross-cutting changes. Write short design notes in the board before builders start a change that spans areas, review risky diffs, and keep decisions recorded where the project keeps them.",
+      "skills": [
+        "decompose-goal",
+        "discuss-and-decide",
+        "swarm-ticket",
+        "plan-ticket",
+        "review-change",
+        "team-communication",
+        "status-report"
+      ]
+    },
+    "developer": {
+      "title": "Developer",
+      "squad": "build",
+      "model": "opus",
+      "effort": "high",
+      "launch": "session",
+      "worktree": true,
+      "readOnly": false,
+      "mascot": {
+        "shape": "frog",
+        "color": "#8fd63a",
+        "eyes": "googly",
+        "accessory": "none"
+      },
+      "duties": "Fix and build in your area only, on your own branch: one commit per ticket with a test, the checks of every package you touched green, the ticket set to `fixed` with branch and commit. Ask the owner of another area for changes there.",
+      "skills": [
+        "plan-ticket",
+        "investigate-bug",
+        "verify-before-done",
+        "respond-to-review",
+        "swarm-ticket",
+        "write-ticket",
+        "team-communication",
+        "status-report"
+      ]
+    },
+    "tester": {
+      "title": "Tester",
+      "squad": "quality",
+      "model": "opus",
+      "effort": "high",
+      "launch": "session",
+      "worktree": true,
+      "readOnly": false,
+      "mascot": {
+        "shape": "dome",
+        "color": "#ff5252",
+        "eyes": "dots",
+        "accessory": "magnifier"
+      },
+      "duties": "Find real, reproducible problems in your area and file each as its own ticket with an exact repro and evidence. Verify the fixes where you are the verifier on the integration branch: `verified` or `reopened` with evidence. You do not fix product code.",
+      "skills": [
+        "write-ticket",
+        "investigate-bug",
+        "verify-before-done",
+        "swarm-ticket",
+        "team-communication",
+        "status-report"
+      ]
+    },
+    "reviewer": {
+      "title": "Reviewer",
+      "squad": "quality",
+      "model": "opus",
+      "effort": "high",
+      "launch": "session",
+      "worktree": false,
+      "readOnly": true,
+      "mascot": {
+        "shape": "heart",
+        "color": "#ff3fb4",
+        "eyes": "dots",
+        "accessory": "sunglasses"
+      },
+      "duties": "Review every integrated change for correctness and security, file a ticket per real problem, and keep a review log in your report.",
+      "skills": [
+        "review-change",
+        "write-ticket",
+        "swarm-ticket",
+        "team-communication",
+        "status-report"
+      ]
+    },
+    "researcher": {
+      "title": "Researcher",
+      "squad": "quality",
+      "model": "sonnet",
+      "effort": "medium",
+      "launch": "session",
+      "worktree": false,
+      "readOnly": true,
+      "mascot": {
+        "shape": "cloud",
+        "color": "#22c3ee",
+        "eyes": "googly",
+        "accessory": "goggles"
+      },
+      "duties": "Answer the open questions the team files (docs, libraries, prior decisions) with sources, and keep a findings log the others can cite.",
+      "skills": [
+        "investigate-bug",
+        "write-ticket",
+        "discuss-and-decide",
+        "team-communication",
+        "status-report"
+      ]
+    },
+    "writer": {
+      "title": "Technical writer",
+      "squad": "quality",
+      "model": "sonnet",
+      "effort": "medium",
+      "launch": "session",
+      "worktree": true,
+      "readOnly": false,
+      "mascot": {
+        "shape": "gumdrop",
+        "color": "#34d399",
+        "eyes": "smile",
+        "accessory": "bowtie"
+      },
+      "duties": "Keep the documentation true to the code the team changes: one commit per ticket, docs only, and flag every place where the docs and the code disagree.",
+      "skills": [
+        "plan-ticket",
+        "verify-before-done",
+        "respond-to-review",
+        "team-communication",
+        "status-report"
+      ]
+    },
+    "operator": {
+      "title": "Operator",
+      "squad": "quality",
+      "model": "haiku",
+      "effort": "low",
+      "launch": "session",
+      "worktree": false,
+      "readOnly": false,
+      "mascot": {
+        "shape": "bean",
+        "color": "#8b5cf6",
+        "eyes": "dots",
+        "accessory": "antenna"
+      },
+      "duties": "Run the mechanical, well-specified tasks the team hands you (re-running checks, collecting logs, updating tables), exactly as written, and report the result in the ticket.",
+      "skills": [
+        "verify-before-done",
+        "team-communication",
+        "status-report"
+      ]
+    }
+  },
+  "teams": {
+    "small": [
+      "lead",
+      "product-owner",
+      "developer",
+      "developer",
+      "tester"
+    ],
+    "standard": [
+      "lead",
+      "product-owner",
+      "delivery-lead",
+      "release-manager",
+      "developer",
+      "developer",
+      "developer",
+      "tester",
+      "tester",
+      "tester",
+      "tester"
+    ],
+    "review": [
+      "lead",
+      "product-owner",
+      "reviewer",
+      "reviewer",
+      "tester",
+      "researcher"
+    ]
+  }
+}

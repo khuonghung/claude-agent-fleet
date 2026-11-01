@@ -1,0 +1,22 @@
+{
+  "name": "claude-agent-fleet",
+  "version": "0.3.0",
+  "private": true,
+  "description": "A Claude Code plugin to plan, launch and watch a fleet of coding agents: goal, org chart, per-agent model and effort, time budget, and a live dashboard.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test plugins/agent-fleet/tests/*.test.mjs web/i18n.test.mjs",
+    "build": "pnpm --dir web build",
+    "typecheck": "pnpm --dir web typecheck",
+    "validate": "claude plugin validate --strict plugins/agent-fleet/.claude-plugin/plugin.json && claude plugin validate --strict ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/khuonghung/claude-agent-fleet.git"
+  },
+  "homepage": "https://github.com/khuonghung/claude-agent-fleet",
+  "license": "Apache-2.0"
+}

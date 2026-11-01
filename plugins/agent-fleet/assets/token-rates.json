@@ -1,0 +1,19 @@
+{
+  "about": "Output tokens one member writes per hour it is active, measured on a 10-member fleet of Claude Code desktop sessions (one transcript per member, each model message counted once by its id, active time = gaps between transcript events of at most 5 minutes). Effort factors and the Haiku rates are estimates scaled from those measurements, not measured.",
+  "measuredOn": "on 2026-11-01 from a 10-member fleet over about 3 hours: 8 Opus at high effort, 2 Sonnet at medium",
+  "perActiveHour": {
+    "opus": { "build": 108000, "quality": 104000, "command": 94000 },
+    "sonnet": { "build": 70000, "quality": 60000, "command": 24000 },
+    "haiku": { "build": 50000, "quality": 45000, "command": 18000 }
+  },
+  "measured": {
+    "opus/build/high": [80900, 131600, 112400],
+    "opus/quality/high": [88000, 129900, 104300, 93400],
+    "opus/command/high": [94400],
+    "sonnet/command/medium": [28800, 18900]
+  },
+  "effortFactor": { "low": 0.55, "medium": 0.8, "high": 1, "xhigh": 1.25, "max": 1.5 },
+  "measuredEffort": { "opus": "high", "sonnet": "medium", "haiku": "medium" },
+  "activeShare": { "build": 0.9, "quality": 0.85, "command": 0.65 },
+  "spread": 0.3
+}

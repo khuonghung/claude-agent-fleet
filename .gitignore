@@ -1,0 +1,6 @@
+node_modules/
+.fleet/
+*.log
+# A recorded fleet points at paths on the machine that ran it
+fleet.json
+history.json

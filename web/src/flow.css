@@ -1,0 +1,112 @@
+/* Ticket flow: the pipeline strip, flow metrics, filters, an adaptive board (empty stages fold into rails, a focused
+   stage spreads its cards across the width) and a sortable list. Loaded after controls.css. */
+.flow { display: grid; gap: 12px; }
+
+/* Pipeline strip */
+.strip { display: flex; gap: 4px; min-height: 44px; }
+.strip-seg { position: relative; flex: 1 1 0; min-width: 58px; display: grid; align-content: center; gap: 1px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); color: var(--muted); font: inherit; text-align: left; cursor: pointer; overflow: hidden; transition: flex-grow .5s var(--ease), border-color .2s, background .2s, transform .2s var(--ease); }
+.strip-seg:not(:last-child)::after { content: ""; position: absolute; right: -1px; top: 50%; width: 7px; height: 7px; border-top: 1.5px solid var(--line-2); border-right: 1.5px solid var(--line-2); transform: translate(50%, -50%) rotate(45deg); background: var(--panel); z-index: 1; }
+.strip-seg b { font: 600 16px/1.1 var(--mono); color: var(--ink); font-variant-numeric: tabular-nums; }
+.strip-seg span { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.strip-seg:hover { border-color: var(--line-2); transform: translateY(-1px); }
+.strip-seg.is-on { border-color: var(--gold); background: var(--gold-soft); box-shadow: 0 0 0 3px var(--gold-soft); }
+.strip-seg.is-empty { min-width: 46px; flex-grow: 0; opacity: .55; }
+.strip-seg.is-empty b { color: var(--faint); }
+.strip-seg.st-verified:not(.is-empty) { background: color-mix(in srgb, var(--ok) 14%, var(--panel-2)); border-color: color-mix(in srgb, var(--ok) 35%, var(--line)); }
+.strip-seg.st-verified b { color: var(--ok); }
+.strip-seg.st-integrated:not(.is-empty), .strip-seg.st-fixed:not(.is-empty) { background: color-mix(in srgb, var(--info) 10%, var(--panel-2)); }
+.strip-seg.st-in-progress:not(.is-empty) { background: color-mix(in srgb, var(--gold-2) 14%, var(--panel-2)); }
+.strip-seg.st-reopened { border-color: color-mix(in srgb, var(--bad) 50%, var(--line)); background: color-mix(in srgb, var(--bad) 12%, var(--panel-2)); }
+.strip-seg.st-reopened b { color: var(--bad); }
+.strip-seg.st-parked { opacity: .75; }
+
+/* Flow metrics */
+.fm { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 12px; color: var(--muted); }
+.fm-item { display: inline-flex; align-items: center; gap: 6px; }
+.fm-item .icon { color: var(--faint); }
+.fm-item b { font: 600 13px var(--mono); color: var(--ink); font-variant-numeric: tabular-nums; }
+.fm-item.is-ok b, .fm-item.is-ok .icon { color: var(--ok); }
+.fm-item.is-warn b, .fm-item.is-warn .icon { color: var(--warn); }
+.fm-item.is-bad b, .fm-item.is-bad .icon { color: var(--bad); }
+
+/* Filters */
+.flt { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); }
+.flt-icon { color: var(--faint); }
+.flt-sep { width: 1px; height: 18px; background: var(--line-2); margin: 0 2px; }
+.flt-owners { display: flex; flex-wrap: wrap; gap: 3px; }
+.flt-count { margin-left: auto; font: 12px var(--mono); color: var(--faint); }
+.flt .chip { transition: border-color .2s, background .2s, color .2s, transform .15s var(--ease); }
+.flt .chip:hover:not(:disabled) { transform: translateY(-1px); }
+.flt .chip:disabled { opacity: .4; cursor: default; }
+.flt .chip small { font: 11px var(--mono); color: var(--faint); }
+.flt .chip.is-bad { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 12%, transparent); color: var(--bad); }
+.sev-chip { text-transform: capitalize; }
+.sev-chip i { width: 8px; height: 8px; border-radius: 2px; background: currentColor; }
+.sev-chip.sev-critical i { background: var(--bad); }
+.sev-chip.sev-high i { background: var(--warn); }
+.sev-chip.sev-medium i { background: var(--info); }
+.sev-chip.sev-low i { background: var(--faint); }
+.flt-clear { color: var(--ink); }
+
+/* Board: rails for empty stages, populated ones share the width; no horizontal scroll unless the stages truly need it */
+.kanban { grid-auto-flow: column; grid-auto-columns: auto; grid-template-columns: none; display: flex; align-items: stretch; gap: 8px; overflow-x: auto; }
+.kanban > .col { flex: 1 1 230px; min-width: 220px; }
+.kanban > .col.is-rail { flex: 0 0 40px; min-width: 40px; min-height: 160px; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 10px 0; background: transparent; border-style: dashed; color: var(--faint); }
+.col.is-rail b { font: 600 12px var(--mono); }
+.col.is-rail span { writing-mode: vertical-rl; transform: rotate(180deg); font-size: 11.5px; font-weight: 600; letter-spacing: .02em; white-space: nowrap; }
+.kanban > .col.is-wide { flex: 1 1 100%; max-height: none; }
+.col.is-wide .col-body { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); max-height: 70vh; }
+.col.is-parked { opacity: .85; }
+.col.st-verified .col-hd span { color: var(--ok); }
+.col-more { margin-top: 2px; padding: 6px; border: 1px dashed var(--line-2); border-radius: 7px; background: transparent; color: var(--muted); font: inherit; font-size: 12px; cursor: pointer; }
+.col-more:hover { color: var(--ink); border-color: var(--gold); }
+
+/* Cards: the severity class also names the card, so its text stays ink; done and parked work goes quiet */
+.tk { gap: 6px; }
+.tk[class*="sev-"], .tl-row[class*="sev-"] { color: var(--ink); }
+.col.st-verified .tk, .col.st-parked .tk { background-color: color-mix(in srgb, var(--panel) 70%, var(--panel-2)); }
+.col.st-verified .tk .sev, .col.st-parked .tk .sev { opacity: .6; }
+.col.st-verified .tk-title, .col.st-parked .tk-title { color: var(--muted); }
+.tk-top { justify-content: flex-start; }
+.tk-flags { margin-left: auto; display: inline-flex; gap: 6px; }
+.tk-flag { display: inline-flex; align-items: center; gap: 3px; font: 11px var(--mono); color: var(--faint); }
+.tk-flag.th-open { color: var(--gold); }
+.tk-flag.th-decided { color: var(--ok); }
+.tk-people { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.tk-stack { display: inline-flex; align-items: center; }
+.tk-stack .av + .av { margin-left: -6px; }
+.tk-stack .av { box-shadow: 0 0 0 2px var(--panel); border-radius: 50%; }
+.tk-stack em { font: 10.5px var(--mono); font-style: normal; color: var(--faint); margin-left: 3px; }
+.tk-verifier { display: inline-flex; align-items: center; gap: 2px; color: var(--ok); }
+.tk-age { display: inline-flex; align-items: center; gap: 3px; }
+.tk-age b { font-weight: 600; color: var(--muted); }
+.tk-age.is-stale { color: var(--bad); font-weight: 600; }
+.tk.is-stale { border-color: color-mix(in srgb, var(--bad) 45%, var(--line)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--bad) 20%, transparent); }
+
+/* List */
+.tl { display: grid; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel); }
+.tl-head, .tl-row { display: grid; grid-template-columns: 82px minmax(180px, 3fr) 78px 112px minmax(80px, 1fr) 54px 74px minmax(90px, 1.2fr); gap: 10px; align-items: center; padding: 7px 12px; }
+.tl-head { position: sticky; top: 0; z-index: 1; background: var(--panel-2); border-bottom: 1px solid var(--line); }
+.tl-head button { display: inline-flex; align-items: center; gap: 4px; padding: 0; border: 0; background: none; font: 500 11px var(--font); text-transform: uppercase; letter-spacing: .06em; color: var(--faint); cursor: pointer; text-align: left; }
+.tl-head button.is-on { color: var(--ink); }
+.tl-head .icon.is-up { transform: rotate(180deg); }
+.tl-row { border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--ink); font: inherit; font-size: 12.5px; text-align: left; cursor: pointer; transition: background .15s; }
+.tl-row:last-child { border-bottom: 0; }
+.tl-row:hover { background: var(--panel-2); }
+.tl-row.is-stale { background: color-mix(in srgb, var(--bad) 6%, transparent); }
+.tl-row .mono { font-size: 11.5px; }
+.tl-title { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.tl-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tl-title .icon { flex: none; color: var(--gold); }
+.tl-status { font: 500 11px var(--mono); padding: 1px 7px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.tl-status.st-verified { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, var(--line)); }
+.tl-status.st-reopened { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 40%, var(--line)); }
+.tl-status.st-in-progress { color: var(--gold); border-color: color-mix(in srgb, var(--gold) 40%, var(--line)); }
+.tl-area { color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.flow-none { margin: 0; padding: 18px; text-align: center; color: var(--faint); border: 1px dashed var(--line-2); border-radius: 10px; }
+
+@media (max-width: 900px) {
+  .tl-head, .tl-row { grid-template-columns: 74px minmax(140px, 1fr) 70px 100px; }
+  .tl-head > :nth-child(n + 5), .tl-row > :nth-child(n + 5) { display: none; }
+  .strip-seg span { display: none; }
+}

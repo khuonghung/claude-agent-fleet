@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 960 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="how-it-works-title how-it-works-desc" id="how-it-works-root">
+        <title id="how-it-works-title">How Agent Fleet works</title>
+        <desc id="how-it-works-desc">You plan a fleet with a lead Claude Code session, which writes a Markdown board and launches the member agents; members coordinate through the board and commit on their own branches, and a read-only local dashboard streams the board, git and the members' transcripts back to you.</desc>
+        <defs>
+      <style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;family=Noto+Serif:ital@0;1&amp;family=Noto+Sans+KR:wght@400;500;600&amp;family=Noto+Serif+KR:wght@400&amp;family=Noto+Sans+TC:wght@400;500;600&amp;family=Noto+Serif+TC:wght@400&amp;display=swap');
+      #how-it-works-root { --color-paper:   #f6f7f9;
+      --color-ink:     #151922;
+      --color-muted:   #586172;
+      --color-accent:  #8a6110;
+      --font-sans:     'IBM Plex Sans', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif', serif;
+      --font-mono:     'IBM Plex Mono', ui-monospace, monospace; }
+      #how-it-works-root { font-family: var(--font-sans); color: var(--color-ink); }
+      #how-it-works-root .diagram-container { width: 100%; overflow-x: auto; }
+      @media print {
+#how-it-works-root .diagram-container { overflow-x: visible; }
+}</style>
+          <marker id="how-it-works-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#586172"/></marker>
+          <marker id="how-it-works-arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8a6110"/></marker>
+          <marker id="how-it-works-arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#3266c8"/></marker>
+        </defs>
+
+        <rect width="100%" height="100%" fill="#f6f7f9"/>
+
+        <!-- ============ ARROWS (drawn before nodes) ============ -->
+
+        <!-- You → Lead: plan -->
+        <line x1="144" y1="128" x2="206" y2="128" stroke="#586172" stroke-width="1.2" marker-end="url(#how-it-works-arrow)"/>
+        <rect x="160" y="102" width="32" height="12" rx="2" fill="#f6f7f9"/>
+        <text x="176" y="111" fill="#5c6576" font-size="8" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">PLAN</text>
+
+        <!-- Lead → Members: launches -->
+        <line x1="384" y1="128" x2="478" y2="128" stroke="#586172" stroke-width="1.2" marker-end="url(#how-it-works-arrow)"/>
+        <rect x="404" y="102" width="56" height="12" rx="2" fill="#f6f7f9"/>
+        <text x="432" y="111" fill="#5c6576" font-size="8" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">LAUNCHES</text>
+
+        <!-- Members → git: commits -->
+        <line x1="696" y1="128" x2="762" y2="128" stroke="#586172" stroke-width="1.2" marker-end="url(#how-it-works-arrow)"/>
+        <rect x="704" y="102" width="52" height="12" rx="2" fill="#f6f7f9"/>
+        <text x="730" y="111" fill="#5c6576" font-size="8" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">COMMITS</text>
+
+        <!-- Lead → Board: writes the plan (board, briefs, one agent per member) -->
+        <path d="M 296,156 V 292 Q 296,300 304,300 H 358" fill="none" stroke="#586172" stroke-width="1.2" marker-end="url(#how-it-works-arrow)"/>
+        <rect x="304" y="204" width="72" height="12" rx="2" fill="#f6f7f9"/>
+        <text x="340" y="213" fill="#5c6576" font-size="8" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">WRITES PLAN</text>
+
+        <!-- Members → Board: tickets, threads, reports -->
+        <line x1="534" y1="168" x2="534" y2="262" stroke="#586172" stroke-width="1.2" marker-end="url(#how-it-works-arrow)"/>
+        <rect x="484" y="208" width="42" height="12" rx="2" fill="#f6f7f9"/>
+        <text x="505" y="217" fill="#5c6576" font-size="8" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">WRITES</text>
+
+        <!-- Board → Members: briefs and assignments -->
+        <line x1="588" y1="264" x2="588" y2="170" stroke="#586172" stroke-width="1.2" marker-end="url(#how-it-works-arrow)"/>
+        <rect x="596" y="208" width="36" height="12" rx="2" fill="#f6f7f9"/>
+        <text x="614" y="217" fill="#5c6576" font-size="8" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">READS</text>
+
+        <!-- Members → Dashboard: transcripts, read passively (dashed), hopping over the Board → Dashboard drop -->
+        <path d="M 642,168 V 428 Q 642,436 634,436 H 488 a 8,8 0 0,0 -16,0 H 234" fill="none" stroke="#586172" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#how-it-works-arrow)"/>
+        <rect x="652" y="294" width="64" height="12" rx="2" fill="#f6f7f9"/>
+        <text x="684" y="303" fill="#5c6576" font-size="8" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">TRANSCRIPTS</text>
+
+        <!-- Board → Dashboard -->
+        <path d="M 480,336 V 448 Q 480,456 472,456 H 234" fill="none" stroke="#586172" stroke-width="1.2" marker-end="url(#how-it-works-arrow)"/>
+        <rect x="488" y="372" width="36" height="12" rx="2" fill="#f6f7f9"/>
+        <text x="506" y="381" fill="#5c6576" font-size="8" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">READS</text>
+
+        <!-- git → Dashboard -->
+        <path d="M 852,156 V 468 Q 852,476 844,476 H 234" fill="none" stroke="#586172" stroke-width="1.2" marker-end="url(#how-it-works-arrow)"/>
+        <rect x="860" y="294" width="56" height="12" rx="2" fill="#f6f7f9"/>
+        <text x="888" y="303" fill="#5c6576" font-size="8" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">BRANCHES</text>
+
+        <!-- Dashboard → You: live stream (link) -->
+        <line x1="88" y1="416" x2="88" y2="158" stroke="#3266c8" stroke-width="1.2" marker-end="url(#how-it-works-arrow-link)"/>
+        <rect x="96" y="280" width="64" height="12" rx="2" fill="#f6f7f9"/>
+        <text x="128" y="289" fill="#3266c8" font-size="8" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.06em">LIVE · SSE</text>
+
+        <!-- ============ NODES ============ -->
+
+        <!-- You (input) -->
+        <rect x="32" y="100" width="112" height="56" rx="6" fill="#f6f7f9"/>
+        <rect x="32" y="100" width="112" height="56" rx="6" fill="#586172" stroke="#5c6576" stroke-width="1" fill-opacity="0.10"/>
+        <rect x="40" y="106" width="32" height="12" rx="2" fill="none" stroke="#5c6576" stroke-width="0.8" stroke-opacity="0.40"/>
+        <text x="56" y="115" fill="#5c6576" font-size="7" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">USER</text>
+        <text x="88" y="134" fill="#151922" font-size="12" font-weight="600" font-family="'IBM Plex Sans', system-ui, sans-serif" text-anchor="middle">You</text>
+        <text x="88" y="148" fill="#586172" font-size="9" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">goal · decisions</text>
+
+        <!-- Lead session (backend) -->
+        <rect x="208" y="100" width="176" height="56" rx="6" fill="#f6f7f9"/>
+        <rect x="208" y="100" width="176" height="56" rx="6" fill="#ffffff" stroke="#151922" stroke-width="1"/>
+        <rect x="216" y="106" width="48" height="12" rx="2" fill="none" stroke="#151922" stroke-width="0.8" stroke-opacity="0.40"/>
+        <text x="240" y="115" fill="#151922" font-size="7" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em" fill-opacity="0.80">SESSION</text>
+        <text x="296" y="134" fill="#151922" font-size="12" font-weight="600" font-family="'IBM Plex Sans', system-ui, sans-serif" text-anchor="middle">Lead session</text>
+        <text x="296" y="148" fill="#586172" font-size="9" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">/agent-fleet:new · launch</text>
+
+        <!-- Members (backend) -->
+        <rect x="480" y="88" width="216" height="80" rx="6" fill="#f6f7f9"/>
+        <rect x="480" y="88" width="216" height="80" rx="6" fill="#ffffff" stroke="#151922" stroke-width="1"/>
+        <rect x="488" y="94" width="44" height="12" rx="2" fill="none" stroke="#151922" stroke-width="0.8" stroke-opacity="0.40"/>
+        <text x="510" y="103" fill="#151922" font-size="7" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em" fill-opacity="0.80">AGENTS</text>
+        <text x="588" y="128" fill="#151922" font-size="12" font-weight="600" font-family="'IBM Plex Sans', system-ui, sans-serif" text-anchor="middle">Members</text>
+        <text x="588" y="144" fill="#586172" font-size="9" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">sessions · subagents · claude -p</text>
+        <text x="588" y="157" fill="#586172" font-size="9" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">PO · builders · testers · release</text>
+
+        <!-- git (store) -->
+        <rect x="764" y="100" width="176" height="56" rx="6" fill="#f6f7f9"/>
+        <rect x="764" y="100" width="176" height="56" rx="6" fill="#151922" stroke="#586172" stroke-width="1" fill-opacity="0.05"/>
+        <rect x="772" y="106" width="28" height="12" rx="2" fill="none" stroke="#586172" stroke-width="0.8" stroke-opacity="0.40"/>
+        <text x="786" y="115" fill="#586172" font-size="7" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">GIT</text>
+        <text x="852" y="134" fill="#151922" font-size="12" font-weight="600" font-family="'IBM Plex Sans', system-ui, sans-serif" text-anchor="middle">Repository</text>
+        <text x="852" y="148" fill="#586172" font-size="9" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">own branches → integration</text>
+
+        <!-- Board (focal) -->
+        <rect x="360" y="264" width="240" height="72" rx="6" fill="#f6f7f9"/>
+        <rect x="360" y="264" width="240" height="72" rx="6" fill="#c8961f" stroke="#8a6110" stroke-width="1.2" fill-opacity="0.12"/>
+        <rect x="368" y="270" width="52" height="12" rx="2" fill="none" stroke="#8a6110" stroke-width="0.8" stroke-opacity="0.50"/>
+        <text x="394" y="279" fill="#8a6110" font-size="7" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">MARKDOWN</text>
+        <text x="480" y="302" fill="#151922" font-size="12" font-weight="600" font-family="'IBM Plex Sans', system-ui, sans-serif" text-anchor="middle">Board</text>
+        <text x="480" y="317" fill="#586172" font-size="9" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">.fleet/&lt;mission&gt;/</text>
+        <text x="480" y="329" fill="#586172" font-size="9" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">tickets · threads · reports</text>
+
+        <!-- Dashboard (focal) -->
+        <rect x="32" y="416" width="200" height="80" rx="6" fill="#f6f7f9"/>
+        <rect x="32" y="416" width="200" height="80" rx="6" fill="#c8961f" stroke="#8a6110" stroke-width="1.2" fill-opacity="0.12"/>
+        <rect x="40" y="422" width="40" height="12" rx="2" fill="none" stroke="#8a6110" stroke-width="0.8" stroke-opacity="0.50"/>
+        <text x="60" y="431" fill="#8a6110" font-size="7" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.08em">LOCAL</text>
+        <text x="132" y="458" fill="#151922" font-size="12" font-weight="600" font-family="'IBM Plex Sans', system-ui, sans-serif" text-anchor="middle">Dashboard</text>
+        <text x="132" y="474" fill="#586172" font-size="9" font-family="'IBM Plex Mono', ui-monospace, monospace" text-anchor="middle">localhost:4600 · read-only</text>
+
+        <!-- ============ LEGEND ============ -->
+        <line x1="32" y1="528" x2="928" y2="528" stroke="#151922" stroke-width="0.8" stroke-opacity="0.10"/>
+        <text x="32" y="556" fill="#586172" font-size="8" font-family="'IBM Plex Mono', ui-monospace, monospace" letter-spacing="0.14em">LEGEND</text>
+
+        <rect x="104" y="546" width="20" height="12" rx="3" fill="#c8961f" stroke="#8a6110" stroke-width="1" fill-opacity="0.12"/>
+        <text x="132" y="556" fill="#586172" font-size="8" font-family="'IBM Plex Mono', ui-monospace, monospace">shared state</text>
+
+        <rect x="224" y="546" width="20" height="12" rx="3" fill="#ffffff" stroke="#151922" stroke-width="1"/>
+        <text x="252" y="556" fill="#586172" font-size="8" font-family="'IBM Plex Mono', ui-monospace, monospace">Claude Code agents</text>
+
+        <rect x="372" y="546" width="20" height="12" rx="3" fill="#151922" stroke="#586172" stroke-width="1" fill-opacity="0.05"/>
+        <text x="400" y="556" fill="#586172" font-size="8" font-family="'IBM Plex Mono', ui-monospace, monospace">store</text>
+
+        <rect x="452" y="546" width="20" height="12" rx="3" fill="#586172" stroke="#5c6576" stroke-width="1" fill-opacity="0.10"/>
+        <text x="480" y="556" fill="#586172" font-size="8" font-family="'IBM Plex Mono', ui-monospace, monospace">you</text>
+
+        <line x1="520" y1="552" x2="548" y2="552" stroke="#586172" stroke-width="1.2" marker-end="url(#how-it-works-arrow)"/>
+        <text x="556" y="556" fill="#586172" font-size="8" font-family="'IBM Plex Mono', ui-monospace, monospace">flow</text>
+
+        <line x1="604" y1="552" x2="632" y2="552" stroke="#586172" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#how-it-works-arrow)"/>
+        <text x="640" y="556" fill="#586172" font-size="8" font-family="'IBM Plex Mono', ui-monospace, monospace">read passively</text>
+
+        <line x1="736" y1="552" x2="764" y2="552" stroke="#3266c8" stroke-width="1.2" marker-end="url(#how-it-works-arrow-link)"/>
+        <text x="772" y="556" fill="#586172" font-size="8" font-family="'IBM Plex Mono', ui-monospace, monospace">live stream to you</text>
+      </svg>
