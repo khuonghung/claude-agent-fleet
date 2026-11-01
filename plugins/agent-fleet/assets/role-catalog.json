@@ -59,8 +59,8 @@
       "worktree": false,
       "readOnly": false,
       "mascot": {
-        "shape": "bean",
-        "color": "#f2b53a",
+        "shape": "chick",
+        "color": "#f7b731",
         "eyes": "dots",
         "accessory": "crown"
       },
@@ -82,8 +82,8 @@
       "worktree": false,
       "readOnly": true,
       "mascot": {
-        "shape": "cloud",
-        "color": "#2f7cf6",
+        "shape": "mochi",
+        "color": "#4f8cff",
         "eyes": "dots",
         "accessory": "beret"
       },
@@ -106,7 +106,7 @@
       "worktree": false,
       "readOnly": true,
       "mascot": {
-        "shape": "gumdrop",
+        "shape": "cat",
         "color": "#ff8a3d",
         "eyes": "dots",
         "accessory": "headset"
@@ -130,8 +130,8 @@
       "worktree": true,
       "readOnly": false,
       "mascot": {
-        "shape": "bean",
-        "color": "#18c3b0",
+        "shape": "bear",
+        "color": "#14b8a6",
         "eyes": "dots",
         "accessory": "hardhat"
       },
@@ -152,7 +152,7 @@
       "worktree": true,
       "readOnly": false,
       "mascot": {
-        "shape": "dome",
+        "shape": "owl",
         "color": "#a78bfa",
         "eyes": "googly",
         "accessory": "glasses"
@@ -178,7 +178,7 @@
       "readOnly": false,
       "mascot": {
         "shape": "frog",
-        "color": "#8fd63a",
+        "color": "#7ccf3a",
         "eyes": "googly",
         "accessory": "none"
       },
@@ -203,8 +203,8 @@
       "worktree": true,
       "readOnly": false,
       "mascot": {
-        "shape": "dome",
-        "color": "#ff5252",
+        "shape": "bunny",
+        "color": "#ff6b7a",
         "eyes": "dots",
         "accessory": "magnifier"
       },
@@ -250,8 +250,8 @@
       "worktree": false,
       "readOnly": true,
       "mascot": {
-        "shape": "cloud",
-        "color": "#22c3ee",
+        "shape": "ghost",
+        "color": "#38bdf8",
         "eyes": "googly",
         "accessory": "goggles"
       },

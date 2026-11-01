@@ -10,12 +10,14 @@ import { Fleet } from "./parts/Fleet";
 import { Flow } from "./parts/Flow";
 import { Header, type Theme } from "./parts/Header";
 import { Kpis } from "./parts/Kpis";
+import { LooksContext, useLooks } from "./parts/Mascot";
 import { Members, MissionPlan, OrgChart } from "./parts/Org";
 import { Attention, Lineup } from "./parts/Overview";
 import { Branches, Infra, Notices, Reports } from "./parts/Side";
 import { Threads } from "./parts/Threads";
 import { Slider } from "./ui/Controls";
 import { Palette, Toasts } from "./ui/Live";
+import type { AgentDef } from "./types";
 import { useFleet, useNow } from "./useFleet";
 
 const TABS = ["overview", "org", "fleet", "tickets", "code", "reports"] as const;
@@ -40,6 +42,7 @@ const readTheme = (): Theme => {
   const t = stored("fleet-theme");
   return t === "dark" || t === "light" ? t : "system";
 };
+const NO_AGENTS: AgentDef[] = [];
 const tabFromHash = (): Tab => TABS.find((t) => `#${t}` === location.hash) ?? "overview";
 
 export function App() {
@@ -53,6 +56,8 @@ export function App() {
   const lang = pickLanguage(chosen, state?.mission.language, navigator.language);
   const i18n = useMemo(() => ({ lang, locale: LANGUAGES.find((l) => l.id === lang)?.locale ?? "en-GB", t: translator(lang) }), [lang]);
   const { t } = i18n;
+  // One look per member for the whole page: members who share a role get told apart the same way everywhere.
+  const looks = useLooks(state?.agents ?? NO_AGENTS);
 
   useEffect(() => {
     if (theme === "system") document.documentElement.removeAttribute("data-theme");
@@ -111,108 +116,110 @@ export function App() {
 
   return (
     <I18nContext.Provider value={i18n}>
-      <div className="app">
-        <Header mission={state.mission} now={now} link={link} lastAt={lastAt} theme={theme} onTheme={setTheme} onLang={onLang} onSearch={() => setPalette(true)}>
-          <Slider kind="tabs" label="tabs" value={tab} onChange={go} items={TABS.map((id) => ({ id, label: t(`tab.${id}`), badge: counts[id] ? <small>{counts[id]}</small> : undefined }))} />
-        </Header>
+      <LooksContext.Provider value={looks}>
+        <div className="app">
+          <Header mission={state.mission} now={now} link={link} lastAt={lastAt} theme={theme} onTheme={setTheme} onLang={onLang} onSearch={() => setPalette(true)}>
+            <Slider kind="tabs" label="tabs" value={tab} onChange={go} items={TABS.map((id) => ({ id, label: t(`tab.${id}`), badge: counts[id] ? <small>{counts[id]}</small> : undefined }))} />
+          </Header>
 
-        <main className="main" key={tab}>
-          {!launched(state) && (
-            <p className="banner" role="status">
-              {t("app.notLaunched")}
-            </p>
-          )}
+          <main className="main" key={tab}>
+            {!launched(state) && (
+              <p className="banner" role="status">
+                {t("app.notLaunched")}
+              </p>
+            )}
 
-          {tab === "overview" && (
-            <>
-              <Lineup s={state} now={now} onAgent={onAgent} />
-              <Kpis s={state} now={now} />
-              <div className="layout">
-                <div className="col-main">
-                  <ChartCard title={t("ch.burn")} note={t("ch.burnNote")}>
-                    <BurnUp s={state} now={now} />
-                  </ChartCard>
-                  <ChartCard title={t("ch.pulse")} note={t("ch.pulseNote")}>
-                    <Pulse s={state} now={now} onAgent={onAgent} />
-                  </ChartCard>
-                  <div className="pair">
-                    <ChartCard title={t("ch.tokens")} note={t("ch.tokensNote")}>
-                      <TokenBurn s={state} now={now} />
+            {tab === "overview" && (
+              <>
+                <Lineup s={state} now={now} onAgent={onAgent} />
+                <Kpis s={state} now={now} />
+                <div className="layout">
+                  <div className="col-main">
+                    <ChartCard title={t("ch.burn")} note={t("ch.burnNote")}>
+                      <BurnUp s={state} now={now} />
                     </ChartCard>
-                    <ChartCard title={t("ch.funnel")} note={t("ch.funnelNote")}>
-                      <Funnel s={state} />
+                    <ChartCard title={t("ch.pulse")} note={t("ch.pulseNote")}>
+                      <Pulse s={state} now={now} onAgent={onAgent} />
                     </ChartCard>
+                    <div className="pair">
+                      <ChartCard title={t("ch.tokens")} note={t("ch.tokensNote")}>
+                        <TokenBurn s={state} now={now} />
+                      </ChartCard>
+                      <ChartCard title={t("ch.funnel")} note={t("ch.funnelNote")}>
+                        <Funnel s={state} />
+                      </ChartCard>
+                    </div>
+                  </div>
+                  <div className="col-side">
+                    <Attention s={state} now={now} onTicket={onTicket} onAgent={onAgent} />
+                    {(state.board?.channel?.posts.length ?? 0) > 0 && <Channel s={state} now={now} onAgent={onAgent} onTicket={onTicket} onDoc={onDoc} />}
+                    {(state.board?.threads ?? []).some((x) => x.status === "open") && <Threads s={state} now={now} onAgent={onAgent} onDoc={onDoc} />}
+                    <Feed s={state} onTicket={onTicket} onAgent={onAgent} />
                   </div>
                 </div>
+              </>
+            )}
+
+            {tab === "org" && (
+              <>
+                <OrgChart s={state} now={now} onAgent={onAgent} />
+                <div className="pair pair-wide">
+                  <Members s={state} now={now} onAgent={onAgent} />
+                  <MissionPlan s={state} now={now} />
+                </div>
+              </>
+            )}
+
+            {tab === "fleet" && (
+              <div className="layout">
+                <div className="col-main">
+                  <Fleet s={state} now={now} onAgent={onAgent} />
+                </div>
                 <div className="col-side">
-                  <Attention s={state} now={now} onTicket={onTicket} onAgent={onAgent} />
-                  {(state.board?.channel?.posts.length ?? 0) > 0 && <Channel s={state} now={now} onAgent={onAgent} onTicket={onTicket} onDoc={onDoc} />}
-                  {(state.board?.threads ?? []).some((x) => x.status === "open") && <Threads s={state} now={now} onAgent={onAgent} onDoc={onDoc} />}
+                  {state.board?.channel && <Channel s={state} now={now} onAgent={onAgent} onTicket={onTicket} onDoc={onDoc} />}
+                  <Threads s={state} now={now} onAgent={onAgent} onDoc={onDoc} />
+                  <Comms s={state} />
                   <Feed s={state} onTicket={onTicket} onAgent={onAgent} />
                 </div>
               </div>
-            </>
-          )}
+            )}
 
-          {tab === "org" && (
-            <>
-              <OrgChart s={state} now={now} onAgent={onAgent} />
-              <div className="pair pair-wide">
-                <Members s={state} now={now} onAgent={onAgent} />
-                <MissionPlan s={state} now={now} />
-              </div>
-            </>
-          )}
+            {tab === "tickets" && (
+              <>
+                <Flow s={state} now={now} onTicket={onTicket} />
+                <div className="pair">
+                  <ChartCard title={t("ch.funnel")} note={t("ch.funnelNote")}>
+                    <Funnel s={state} />
+                  </ChartCard>
+                  <ChartCard title={t("ch.burn")} note={t("ch.burnNote")}>
+                    <BurnUp s={state} now={now} />
+                  </ChartCard>
+                </div>
+              </>
+            )}
 
-          {tab === "fleet" && (
-            <div className="layout">
-              <div className="col-main">
-                <Fleet s={state} now={now} onAgent={onAgent} />
-              </div>
-              <div className="col-side">
-                {state.board?.channel && <Channel s={state} now={now} onAgent={onAgent} onTicket={onTicket} onDoc={onDoc} />}
-                <Threads s={state} now={now} onAgent={onAgent} onDoc={onDoc} />
-                <Comms s={state} />
-                <Feed s={state} onTicket={onTicket} onAgent={onAgent} />
-              </div>
-            </div>
-          )}
-
-          {tab === "tickets" && (
-            <>
-              <Flow s={state} now={now} onTicket={onTicket} />
+            {tab === "code" && (
               <div className="pair">
-                <ChartCard title={t("ch.funnel")} note={t("ch.funnelNote")}>
-                  <Funnel s={state} />
-                </ChartCard>
-                <ChartCard title={t("ch.burn")} note={t("ch.burnNote")}>
-                  <BurnUp s={state} now={now} />
-                </ChartCard>
+                <Branches s={state} now={now} />
+                <div className="stack">
+                  <Infra s={state} />
+                  <Comms s={state} />
+                </div>
               </div>
-            </>
-          )}
+            )}
 
-          {tab === "code" && (
-            <div className="pair">
-              <Branches s={state} now={now} />
-              <div className="stack">
-                <Infra s={state} />
-                <Comms s={state} />
+            {tab === "reports" && (
+              <div className="pair">
+                <Reports s={state} now={now} onDoc={onDoc} />
+                <Notices s={state} />
               </div>
-            </div>
-          )}
-
-          {tab === "reports" && (
-            <div className="pair">
-              <Reports s={state} now={now} onDoc={onDoc} />
-              <Notices s={state} />
-            </div>
-          )}
-        </main>
-        <Drawer s={state} open={open} now={now} onClose={close} onTicket={onTicket} onAgent={onAgent} onDoc={onDoc} />
-        <Toasts s={state} now={now} onTicket={onTicket} onAgent={onAgent} />
-        <Palette s={state} open={palette} onOpen={setPalette} tabs={TABS.map((id) => ({ id, label: t(`tab.${id}`) }))} onTab={go} onAgent={onAgent} onTicket={onTicket} />
-      </div>
+            )}
+          </main>
+          <Drawer s={state} open={open} now={now} onClose={close} onTicket={onTicket} onAgent={onAgent} onDoc={onDoc} />
+          <Toasts s={state} now={now} onTicket={onTicket} onAgent={onAgent} />
+          <Palette s={state} open={palette} onOpen={setPalette} tabs={TABS.map((id) => ({ id, label: t(`tab.${id}`) }))} onTab={go} onAgent={onAgent} onTicket={onTicket} />
+        </div>
+      </LooksContext.Provider>
     </I18nContext.Provider>
   );
 }

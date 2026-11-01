@@ -79,3 +79,19 @@
 @media (prefers-reduced-motion: reduce) {
   .mascot *, .mascot { animation: none !important; transition: none !important; }
 }
+
+/* Ears and tufts twitch now and then; the chick's tuft bobs; the ghost floats instead of standing. */
+.mascot :is(.m-ear-l, .m-ear-r) { transform-box: fill-box; transform-origin: 50% 90%; }
+.mascot:not(.mood-sleepy):not(.mood-off) .m-ear-l { animation: m-twitch-l var(--twitch, 6s) ease-in-out infinite var(--sway-delay, 0s); }
+.mascot:not(.mood-sleepy):not(.mood-off) .m-ear-r { animation: m-twitch-r var(--twitch, 6s) ease-in-out infinite var(--sway-delay, 0s); }
+.mascot.mood-sleepy :is(.m-ear-l, .m-ear-r) { transform: rotate(var(--droop, 0deg)); }
+.mascot.mood-sleepy .m-ear-l { --droop: -10deg; }
+.mascot.mood-sleepy .m-ear-r { --droop: 10deg; }
+.mascot .m-tuft { transform-box: fill-box; transform-origin: 40% 100%; animation: m-antenna 2.8s ease-in-out infinite var(--sway-delay, 0s); }
+.mascot.s-ghost.mood-calm .m-rig, .mascot.s-ghost.mood-sleepy .m-rig { animation: m-float calc(var(--breath, 3.6s) * 1.2) ease-in-out infinite; }
+.mascot.s-ghost .m-shadow { transform: scale(.75); opacity: .7; }
+.mascot .m-topper { filter: drop-shadow(0 .6px .6px rgba(0, 0, 0, .18)); }
+
+@keyframes m-twitch-l { 0%, 86%, 100% { transform: rotate(0); } 89% { transform: rotate(-12deg); } 92% { transform: rotate(4deg); } 95% { transform: rotate(-6deg); } }
+@keyframes m-twitch-r { 0%, 60%, 74%, 100% { transform: rotate(0); } 64% { transform: rotate(12deg); } 68% { transform: rotate(-4deg); } 71% { transform: rotate(6deg); } }
+@keyframes m-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6%); } }
