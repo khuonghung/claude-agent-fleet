@@ -96,44 +96,48 @@ h2, h3 { margin: 0; font-weight: 600; }
 .boot .hd-mark { width: 64px; height: 64px; }
 
 /* Header */
+/* Header: a top bar (brand, live status and clock, tools), the mission's phases, then the tabs. */
 .hd {
   position: sticky; top: 0; z-index: 20;
-  display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto auto; align-items: center; gap: 20px;
-  padding: 12px max(20px, env(safe-area-inset-left, 0px)) 12px max(20px, env(safe-area-inset-right, 0px));
-  background: color-mix(in srgb, var(--panel) 92%, transparent);
-  backdrop-filter: blur(10px);
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px;
+  padding: 10px max(20px, env(safe-area-inset-left, 0px)) 0 max(20px, env(safe-area-inset-right, 0px));
+  background: color-mix(in srgb, var(--panel) 90%, transparent);
+  backdrop-filter: saturate(1.4) blur(12px);
   border-bottom: 1px solid var(--line);
 }
-.hd::after { /* the gold seam */
-  content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px;
-  background: linear-gradient(90deg, transparent 0%, var(--gold) 18%, transparent 34%, transparent 58%, var(--gold) 71%, transparent 86%);
-  opacity: 0.7;
-}
-.hd-brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.hd-mark { width: 32px; height: 32px; flex: none; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .16)); }
-.hd-title { font-weight: 600; letter-spacing: 0.01em; }
-.hd-sub { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hd-bar { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.hd-brand { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1 1 auto; }
+.hd-mark { width: 28px; height: 28px; flex: none; }
+.hd-names { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.hd-title { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap; }
+.hd-sep { color: var(--line-2); }
+.hd-sub { font-size: 14px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 
-.hd-timeline { min-width: 0; padding-top: 4px; }
-.tl-track { position: relative; height: 34px; border-radius: 8px; background: var(--panel-2); border: 1px solid var(--line); overflow: hidden; }
-.tl-phase { position: absolute; top: 0; bottom: 0; display: flex; flex-direction: column; justify-content: center; padding: 0 8px; border-right: 1px solid var(--line); z-index: 2; min-width: 0; }
-.tl-phase span { font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted); }
-.tl-phase small { font: 11px var(--font); color: var(--faint); }
-.tl-phase.is-past span { color: var(--faint); }
-.tl-phase.is-current span { color: var(--ink); }
-.tl-phase.is-current { box-shadow: inset 0 -2px 0 var(--gold-2); }
-.tl-fill { position: absolute; inset: 0 auto 0 0; background: var(--gold-soft); z-index: 1; }
-.tl-needle { position: absolute; top: -2px; bottom: -2px; width: 2px; margin-left: -1px; background: var(--gold-2); z-index: 3; box-shadow: 0 0 0 3px var(--gold-soft); }
-
-.hd-clock { text-align: right; }
-.hd-now { font: 500 20px/1.1 var(--mono); font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
-.hd-left { font-size: 12px; color: var(--muted); white-space: nowrap; }
-.hd-link { display: inline-flex; align-items: center; gap: 7px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
-.hd-link i { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
+.hd-status { display: flex; align-items: center; gap: 14px; flex: none; }
+.hd-link { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+.hd-link i { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); }
 .hd-link.is-live { color: var(--ok); }
 .hd-link.is-live i { background: var(--ok); animation: pulse 2s infinite; }
 .hd-link.is-lost, .hd-link.is-stale { color: var(--bad); }
 .hd-link.is-lost i, .hd-link.is-stale i { background: var(--bad); }
+.hd-clock { display: flex; align-items: baseline; gap: 8px; padding-left: 14px; border-left: 1px solid var(--line); }
+.hd-now { font: 500 15px/1 var(--mono); letter-spacing: 0.01em; }
+.hd-left { font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+
+/* Phases: each as long as it lasts; done ones tinted, the current one outlined in gold and filled as far as it has
+   gone. A short one drops its times, then its name (its tooltip keeps both). */
+.hd-phases { display: flex; gap: 3px; min-width: 0; }
+.ph { position: relative; flex: 1 1 0; min-width: 6px; height: 26px; display: flex; align-items: center; gap: 8px; padding: 0 9px; border-radius: 6px; background: var(--panel-2); border: 1px solid var(--line); overflow: hidden; container-type: inline-size; }
+.ph-name { position: relative; min-width: 0; font-size: 12px; font-weight: 500; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ph-time { position: relative; margin-left: auto; font-size: 11px; color: var(--faint); white-space: nowrap; }
+.ph.is-past { background: color-mix(in srgb, var(--gold) 9%, var(--panel-2)); border-color: color-mix(in srgb, var(--gold) 16%, var(--line)); }
+.ph.is-past .ph-name { color: var(--muted); }
+.ph.is-current { background: var(--panel); border-color: color-mix(in srgb, var(--gold-2) 60%, var(--line)); }
+.ph.is-current .ph-name { color: var(--ink); font-weight: 600; }
+.ph.is-current .ph-time { color: var(--muted); }
+.ph-fill { position: absolute; inset: 0 auto 0 0; background: var(--gold-soft); box-shadow: inset -2px 0 0 var(--gold-2); transition: width 1s linear; }
+@container (max-width: 130px) { .ph-time { display: none; } }
+@container (max-width: 30px) { .ph-name { display: none; } }
 
 /* Main */
 .main { padding: 18px max(20px, env(safe-area-inset-left, 0px)) 40px max(20px, env(safe-area-inset-right, 0px)); display: grid; gap: 18px; max-width: 1840px; margin: 0 auto; }
@@ -313,7 +317,7 @@ h2, h3 { margin: 0; font-weight: 600; }
 .notices .md { max-height: 220px; overflow: auto; }
 
 /* Tabs */
-.tabs { grid-column: 1 / -1; display: flex; gap: 2px; margin: 4px 0 -12px; overflow-x: auto; scrollbar-width: none; }
+.tabs { grid-column: 1 / -1; display: flex; gap: 2px; margin: 0 0 -1px; overflow-x: auto; scrollbar-width: none; }
 .tabs button { border: 0; background: none; padding: 9px 14px 10px; font-size: 13.5px; font-weight: 500; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; display: inline-flex; gap: 6px; align-items: center; }
 .tabs button:hover { color: var(--ink); }
 .tabs button.is-on { color: var(--ink); border-bottom-color: var(--gold-2); }
@@ -496,20 +500,28 @@ h2, h3 { margin: 0; font-weight: 600; }
   .layout { grid-template-columns: minmax(0, 1fr); }
   .col-side { position: static; max-height: none; overflow: visible; }
 }
-@media (max-width: 900px) {
-  .hd { grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; }
-  .hd-timeline { grid-column: 1 / -1; grid-row: 2; }
-  .hd-clock { display: none; }
+@media (max-width: 1100px) {
+  .hd-search span, .hd-search kbd { display: none; }
+}
+@media (max-width: 760px) {
+  .hd-title, .hd-sep, .hd-left { display: none; }
+  .hd-bar, .hd-status { gap: 10px; }
+  .hd-clock { padding-left: 10px; }
 }
 @media (max-width: 520px) {
   .card-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .kpi-value { font-size: 24px; }
-  .tl-phase small { display: none; }
+  /* A phone keeps the mission's name: the status shrinks to its dot, the clock goes (the phases show the time), and
+     the compact menus lose their chevrons. */
+  .hd-link { font-size: 0; gap: 0; }
+  .hd-clock { display: none; }
+  .hd-tools { gap: 2px; }
+  .dd.is-compact .dd-chev { display: none; }
+  .dd.is-compact .dd-btn { padding: 0 8px; }
 }
 
 /* v3: language, budget meter, model chips, org chart, plan, members, banner */
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
-.hd-names { min-width: 0; max-width: 260px; }
 .banner { margin: 0; padding: 10px 14px; border-radius: var(--r); border: 1px solid color-mix(in srgb, var(--gold) 45%, var(--line)); background: var(--gold-soft); font-size: 13.5px; }
 .kpi-meter { display: block; height: 5px; border-radius: 3px; background: var(--panel-2); overflow: hidden; margin-top: 2px; }
 .kpi-meter i { display: block; height: 100%; background: var(--ok); border-radius: 3px; transition: width .6s; }

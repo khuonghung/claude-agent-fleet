@@ -8,18 +8,15 @@ kbd { font: 500 11px var(--mono); color: var(--muted); background: var(--panel-2
 .num { font-variant-numeric: tabular-nums; }
 
 /* Header tools */
-.hd { grid-template-columns: auto minmax(0, 1fr) auto auto auto; }
 .hd-tools { display: flex; align-items: center; gap: 6px; }
-.hd-search { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 8px 0 10px; border-radius: 9px; border: 1px solid var(--line); background: var(--panel-2); color: var(--muted); font: inherit; font-size: 12.5px; cursor: pointer; transition: border-color .2s, color .2s, box-shadow .2s; }
+.hd-search { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 6px 0 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--muted); font: inherit; font-size: 12.5px; cursor: pointer; transition: border-color .2s, color .2s, box-shadow .2s; }
 .hd-search:hover { color: var(--ink); border-color: var(--line-2); box-shadow: 0 0 0 3px var(--gold-soft); }
-.tl-phase { transition: background .3s; }
-.tl-phase:hover { background: color-mix(in srgb, var(--gold-soft) 60%, transparent); }
-.tl-needle::after { content: ""; position: absolute; top: 50%; left: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: var(--gold-2); animation: ring 2.2s var(--ease) infinite; }
-.tl-fill { transition: width 1s linear; background: linear-gradient(90deg, transparent, var(--gold-soft) 40%, color-mix(in srgb, var(--gold-2) 22%, transparent)); }
 
 /* Dropdown */
 .dd { position: relative; }
-.dd-btn { display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 9px 0 10px; border-radius: 9px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); font: inherit; font-size: 12.5px; cursor: pointer; transition: border-color .2s, box-shadow .2s; }
+.dd-btn { display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 9px 0 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); font: inherit; font-size: 12.5px; cursor: pointer; transition: border-color .2s, box-shadow .2s; }
+.dd.is-compact .dd-btn { gap: 5px; padding: 0 7px 0 9px; }
+.dd-hint { font-size: 12px; font-weight: 600; letter-spacing: 0.02em; }
 .dd-btn:hover, .dd.is-open .dd-btn { border-color: var(--line-2); box-shadow: 0 0 0 3px var(--gold-soft); }
 .dd-btn:focus-visible, .hd-search:focus-visible { outline: 2px solid var(--gold-2); outline-offset: 2px; }
 .dd-chev { color: var(--faint); transition: transform .25s var(--ease); }
@@ -260,11 +257,6 @@ kbd { font: 500 11px var(--mono); color: var(--muted); background: var(--panel-2
 @keyframes timer { to { transform: scaleX(0); } }
 @keyframes glow { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--gold-2) 55%, transparent); } 100% { box-shadow: 0 0 0 10px transparent; } }
 
-@media (max-width: 900px) {
-  .hd { grid-template-columns: minmax(0, 1fr) auto auto; }
-  .hd-search span, .hd-search kbd { display: none; }
-  .hd-tools { grid-column: 1 / -1; justify-content: flex-end; }
-}
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }

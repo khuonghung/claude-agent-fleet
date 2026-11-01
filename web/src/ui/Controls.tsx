@@ -7,7 +7,8 @@ import { Icon } from "./Icons";
 const reduced = () => typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
 /** A select-only combobox: a button and an animated list. */
-export function Dropdown<T extends string>({ value, options, onChange, label, icon }: { value: T; options: { id: T; label: string; hint?: string }[]; onChange: (id: T) => void; label: string; icon?: Parameters<typeof Icon>[0]["name"] }) {
+/** A menu button; `compact` shows only its icon and the choice's short hint ("VI"), the full label stays in the menu. */
+export function Dropdown<T extends string>({ value, options, onChange, label, icon, compact }: { value: T; options: { id: T; label: string; hint?: string }[]; onChange: (id: T) => void; label: string; icon?: Parameters<typeof Icon>[0]["name"]; compact?: boolean }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const root = useRef<HTMLDivElement>(null);
@@ -24,13 +25,14 @@ export function Dropdown<T extends string>({ value, options, onChange, label, ic
     setOpen(false);
   };
   return (
-    <div className={`dd${open ? " is-open" : ""}`} ref={root}>
+    <div className={`dd${open ? " is-open" : ""}${compact ? " is-compact" : ""}`} ref={root}>
       <button
         type="button"
         className="dd-btn"
         aria-haspopup="listbox"
         aria-expanded={open}
-        aria-label={label}
+        aria-label={`${label}: ${current.label}`}
+        title={compact ? `${label}: ${current.label}` : undefined}
         onClick={() => {
           setActive(Math.max(0, options.indexOf(current)));
           setOpen((v) => !v);
@@ -49,7 +51,7 @@ export function Dropdown<T extends string>({ value, options, onChange, label, ic
         }}
       >
         {icon && <Icon name={icon} />}
-        <span>{current.label}</span>
+        {compact ? current.hint && <span className="dd-hint">{current.hint}</span> : <span>{current.label}</span>}
         <Icon name="chevron" className="dd-chev" />
       </button>
       {open && (
