@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- The dashboard re-reads `fleet.json` when it changes — members added, removed or renamed, a session id recorded by `fleet spawn`, the window, the token limit, the board folder — without a restart; a file caught mid-write is skipped and the last good plan kept. The port is read only at start.
+
 ## 0.3.0 — 2026-11-01
 
 - The account's home folder never leaves the server: every state, patch and board document the dashboard receives shows it as `~`, in all its spellings (Windows, POSIX, MSYS and Claude Code's dashed transcript-folder names).

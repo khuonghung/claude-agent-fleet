@@ -86,10 +86,9 @@ function emptyStats() {
 /** Follows the transcripts of the configured agents. */
 export function createTranscripts(cfg, { sessionNames }) {
   const byAgent = new Map(); // agent id -> {stats, offset, partial, file}
-  const start = new Date(cfg.mission.startAt);
-
+  // `cfg` is read at each use, not captured: the server updates it in place when fleet.json changes.
   const bucketOf = (iso) => {
-    const minutes = Math.floor((Date.parse(iso) - start.getTime()) / 60000);
+    const minutes = Math.floor((Date.parse(iso) - Date.parse(cfg.mission.startAt)) / 60000);
     return minutes < 0 ? null : Math.floor(minutes / BUCKET_MIN);
   };
 
@@ -98,7 +97,7 @@ export function createTranscripts(cfg, { sessionNames }) {
     if (s.recent.length > RECENT) s.recent.splice(0, s.recent.length - RECENT);
   };
 
-  const readText = cfg.privacy?.readText !== false;
+  const readText = () => cfg.privacy?.readText !== false;
   /** Per member: the output tokens already counted for each model message id. */
   const usageSeen = new WeakMap();
 
@@ -144,7 +143,7 @@ export function createTranscripts(cfg, { sessionNames }) {
           const b = at ? bucketOf(at) : null;
           if (b !== null) s.buckets[b] = (s.buckets[b] ?? 0) + 1;
           push(s, { at, kind: "tool", tool: c.name, summary });
-        } else if (readText && c.type === "text" && c.text?.trim()) {
+        } else if (readText() && c.type === "text" && c.text?.trim()) {
           s.lastText = short(c.text, 320);
           s.lastTextAt = at;
           push(s, { at, kind: "text", summary: short(c.text, 200) });
@@ -168,7 +167,7 @@ export function createTranscripts(cfg, { sessionNames }) {
         if (text && !o.isMeta && !/^\[?(Request interrupted|SYSTEM NOTIFICATION)/.test(text)) {
           s.prompts += 1;
           s.phase = "prompt";
-          push(s, { at, kind: "prompt", summary: readText ? short(from ? `✉ ${sessionNames(from) ?? from}: ${text}` : text, 200) : from ? `✉ ${sessionNames(from) ?? from}` : "" });
+          push(s, { at, kind: "prompt", summary: readText() ? short(from ? `✉ ${sessionNames(from) ?? from}: ${text}` : text, 200) : from ? `✉ ${sessionNames(from) ?? from}` : "" });
         }
       }
     } else if (o.type === "api-request") {
@@ -228,6 +227,8 @@ export function createTranscripts(cfg, { sessionNames }) {
       }
     }
     const same = (a, b) => path.resolve(a).toLowerCase() === path.resolve(b).toLowerCase();
+    // A member taken out of the plan is no longer followed.
+    for (const id of byAgent.keys()) if (!cfg.agents.some((a) => a.id === id)) byAgent.delete(id);
     for (const agent of cfg.agents) {
       const m = agent.match ?? {};
       let best = null;

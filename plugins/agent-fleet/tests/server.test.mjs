@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
+import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -129,4 +130,55 @@ test("transcripts: the user's home folder shows as ~ in every spelling, and only
 test("transcripts: Claude Code's dashed transcript-folder spelling of the home folder is redacted too", () => {
   const dashed = os.homedir().replace(/[^A-Za-z0-9]/g, "-");
   assert.equal(redactHome(`projects/${dashed}-Workspace-app/abc.jsonl`), "projects/~-Workspace-app/abc.jsonl");
+});
+
+test("server: the dashboard re-reads fleet.json when it changes, and keeps the last good one while it does not parse", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "fleet-srv-"));
+  const port = await new Promise((done) => {
+    const probe = net.createServer().listen(0, "127.0.0.1", () => {
+      const { port: p } = probe.address();
+      probe.close(() => done(p));
+    });
+  });
+  const fleetFile = path.join(dir, "fleet.json");
+  const fleet = {
+    mission: { name: "Night team", slug: "night-team", goal: "g", startAt: new Date(Date.now() - 3600_000).toISOString(), endAt: new Date(Date.now() + 3600_000).toISOString() },
+    repo: { dir, base: "main" },
+    board: { dir: path.join(dir, "board"), flow: ["new", "fixed"] },
+    transcripts: { root: path.join(dir, "projects"), dirPrefix: "none" },
+    squads: [{ id: "build" }],
+    agents: [{ id: "lead", squad: "build", match: { title: "NT · lead" } }],
+  };
+  fs.mkdirSync(path.join(dir, "board", "tickets"), { recursive: true });
+  fs.writeFileSync(fleetFile, JSON.stringify(fleet));
+  const server = spawn(process.execPath, [path.join(root, "scripts", "server", "index.mjs"), fleetFile], { env: { ...process.env, PORT: String(port) }, stdio: "ignore" });
+  const state = async () => (await fetch(`http://127.0.0.1:${port}/api/state`)).json();
+  const until = async (check) => {
+    for (let i = 0; i < 80; i++) {
+      try {
+        const s = await state();
+        if (check(s)) return s;
+      } catch {
+        // Not listening yet.
+      }
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    throw new Error("timed out");
+  };
+  try {
+    await until((s) => s.agents?.length === 1);
+    fs.writeFileSync(fleetFile, "{ half written");
+    await new Promise((r) => setTimeout(r, 2000));
+    assert.deepEqual((await state()).agents.map((a) => a.id), ["lead"]);
+    fleet.mission.name = "Night team 2";
+    fleet.agents.push({ id: "dev-api", squad: "build", match: { title: "NT · dev-api" } });
+    fs.writeFileSync(fleetFile, JSON.stringify(fleet));
+    const s = await until((x) => x.agents.length === 2);
+    assert.equal(s.mission.name, "Night team 2");
+    assert.ok(!("match" in s.agents[1]), "how members are matched stays on the server");
+    assert.ok("dev-api" in s.telemetry);
+  } finally {
+    server.kill();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });

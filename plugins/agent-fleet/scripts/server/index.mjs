@@ -25,15 +25,20 @@ const port = Number(process.env.PORT ?? cfg.port ?? 4600);
 const dist = path.join(PLUGIN_ROOT, "assets", "dashboard");
 const history = createHistory(path.join(path.dirname(cfgFile), "history.json"));
 
-const state = {
-  rev: 0,
-  startedAt: new Date().toISOString(),
+/** The parts of the state that come straight from fleet.json. */
+const planState = () => ({
   mission: cfg.mission,
   budget: cfg.budget ?? {},
   launch: cfg.launch ?? "session",
   squads: cfg.squads,
   agents: cfg.agents.map(({ match, ...a }) => a),
   flow: cfg.board,
+});
+
+const state = {
+  rev: 0,
+  startedAt: new Date().toISOString(),
+  ...planState(),
   board: null,
   git: null,
   telemetry: {},
@@ -116,11 +121,58 @@ const scheduleBoard = () => {
   clearTimeout(boardTimer);
   boardTimer = setTimeout(() => refreshBoard().catch(() => {}), 350);
 };
-try {
-  fs.watch(cfg.board.dir, { recursive: true }, scheduleBoard);
-} catch {
-  // No recursive watch on this platform: the interval below still refreshes.
+let boardWatch = null;
+const watchBoard = () => {
+  boardWatch?.close();
+  boardWatch = null;
+  try {
+    boardWatch = fs.watch(cfg.board.dir, { recursive: true }, scheduleBoard).on("error", () => {});
+  } catch {
+    // No recursive watch on this platform (or no folder yet): the interval below still refreshes.
+  }
+};
+watchBoard();
+
+// fleet.json: re-read when it changes (a member added or renamed, `fleet spawn` recording a session id, the window or
+// the limit moved). The board, git and transcript readers hold `cfg` itself, so it is updated in place. A file caught
+// mid-write does not parse and is skipped: the write that completes it changes it again. The port stays as it is.
+let cfgText = fs.readFileSync(cfgFile, "utf8");
+async function reloadFleet() {
+  const text = fs.readFileSync(cfgFile, "utf8");
+  if (text === cfgText) return;
+  let next;
+  try {
+    next = readFleet(cfgFile);
+    if (!Array.isArray(next.agents) || !next.board?.dir || !next.mission?.startAt) throw new Error("not a fleet plan");
+  } catch (error) {
+    console.error(`fleet.json not reloaded: ${error.message}`);
+    return;
+  }
+  cfgText = text;
+  const boardMoved = path.resolve(next.board.dir) !== path.resolve(cfg.board.dir);
+  for (const key of Object.keys(cfg)) delete cfg[key];
+  Object.assign(cfg, next);
+  Object.assign(state, planState());
+  if (boardMoved) {
+    watchBoard();
+    lastStatus.clear();
+    state.board = null;
+    state.transitions = [];
+  }
+  await refreshBoard();
+  await transcripts.discover();
+  state.telemetry = transcripts.snapshot();
+  dirty = true;
+  await Promise.all([refreshGit(), refreshProbes()]);
+  console.log(`fleet.json reloaded: ${cfg.agents.length} members`);
 }
+let fleetTimer = null;
+// Polled rather than watched: an editor that saves by replacing the file would end a plain watch.
+fs.watchFile(cfgFile, { interval: 1000 }, (cur, prev) => {
+  if (cur.mtimeMs === prev.mtimeMs && cur.size === prev.size) return;
+  clearTimeout(fleetTimer);
+  fleetTimer = setTimeout(() => reloadFleet().catch(() => {}), 300);
+});
 
 /** One point a minute: ticket counts by stage, active agents, tool calls and tokens so far. */
 async function sampleHistory() {
