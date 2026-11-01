@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.0 — 2026-11-01
 
 - Context kept lean to save tokens. Every model call re-reads a member's whole context, so a member that carries its last ticket into the next pays for it on every step. The plan's new `context.compactAt` (100k tokens by default, 100k to 1M, 0 for off) is the size members are kept under:
   - Subagents compact there on their own (`autoCompactWindow` in each generated agent), and so do headless members (`fleet spawn` sets `CLAUDE_CODE_AUTO_COMPACT_WINDOW`).
@@ -8,7 +8,6 @@
   - Every brief and resume note starts with a `Fleet member: <slug>/<id>` line. The prompt hook records each member's sessions from it (`.fleet/<slug>/sessions/<id>.jsonl`), and after a compaction the session-start hook gives that member its resume note.
   - The protocol (rule 8), briefs and agents say the board is the members' memory: when a member finishes a ticket, and before it ends a turn, the ticket's Log says where it is and what comes next, so a clear loses nothing.
 - The dashboard and `fleet status` follow a member across all its transcripts: the ones the hook recorded, plus every one with its title or description, summed oldest first, with the newest as the member's live state. A member cleared with `/clear` keeps its tokens on the budget, where before only its newest transcript counted.
-
 - Add members while the fleet works: `/agent-fleet:add` proposes a member the fleet needs (role, area, model, effort), shows its estimated tokens against the limit, and launches it. Under it, `fleet add <member.json> [--dry-run]` adds one member or several to `fleet.json` — the others, their session ids and the fleet's times kept — writes the new brief and agent, adds the roster rows and the protocol's roster, notes it in `NOTICES.md`, posts a heads-up on the team channel, and prints what to launch. A new member works from now to the end unless given a window; a second lead, a used id or an ended fleet are refused, and an area another builder owns is a warning. The dashboard picks the member up by itself.
 - Re-running `fleet init` adds a row to `ROSTER.md` for a member it lacks, instead of leaving the roster as it was.
 - A ticket is filed at its first Log line when that is earlier than its file's birth time, which moves whenever an editor saves by replacing the file (Windows). Tickets no longer look fixed before they were filed, the burn-up's created line no longer runs under the fixed one, and the median cycle time is no longer 0 s.
