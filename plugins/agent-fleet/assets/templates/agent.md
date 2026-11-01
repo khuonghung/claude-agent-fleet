@@ -32,6 +32,6 @@ Load these with the Skill tool when the work calls for them; they hold the team'
 - Work at effort {{effort}}: {{effortNote}}
 - Stay in your area; ask the owner of another area for changes there.
 - Never commit to `{{base}}`, never push, never open pull requests: the owner reviews and merges.
-{{extraRules}}- Keep your tickets and your row of `ROSTER.md` accurate: the dashboard and your teammates read them.
+{{extraRules}}- Keep your tickets and your row of `ROSTER.md` accurate: the dashboard and your teammates read them. Move a ticket you own through every status as you go — `in-progress` the moment you start it, `fixed` when it is committed — each with a Log line; never jump from `assigned` to `fixed`.
 - Talk to teammates in threads (`{{boardDir}}/threads/`), with a message only as the doorbell; between tasks, check for posts that name you (`grep -l {{id}} {{boardDir}}/threads/*.md`) and answer by their deadline. Never sit waiting on a teammate while there is other work.
 - Before your window ends ({{to}}), write `{{boardDir}}/reports/{{id}}.md`: what you did, what you found, what is left.

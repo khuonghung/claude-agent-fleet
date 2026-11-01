@@ -10,14 +10,14 @@ Triage turns a pile of findings into a ranked queue the builders can trust. Do i
 ## For each `new` ticket
 
 1. **Read it and try the repro** if it is cheap (under 2 minutes). A ticket without a reproducible problem goes back to its author with a question in the Log, status stays `new`.
-2. **Duplicates**: grep `tickets/` for the same path and symptom. Keep the clearest one, set the others to `duplicate` with `Decision: duplicate of <ID>`.
+2. **Duplicates**: grep `tickets/` for the same path and symptom. Keep the clearest one, set the others to `duplicate` with `Decision: duplicate of <ID>` and copy anything they add into the kept ticket's Log.
 3. **Severity**: apply the scale from `write-ticket`; change it if the author over- or under-rated it and say why in the Log.
 4. **Acceptance criteria**: make sure there are 2–5 testable ones; add or sharpen them now — builders and testers work from them.
 5. **Decision**, with one line of why:
    - `do now` — in the goal, and it fits the time left;
    - `defer` — real but outside the goal or too big for the window; say what it would take;
    - `won't do` — not a problem, or the cost outweighs the value.
-6. Set status `triaged` (or `deferred` / `wont-fix` / `duplicate`) and append to the Log.
+6. Set status `triaged` (or `deferred` / `wont-fix` / `duplicate`) and append to the Log. The `Status:` line holds that word only — the reason and the other ticket go in `Decision:`.
 
 ## Rank what is `do now`
 

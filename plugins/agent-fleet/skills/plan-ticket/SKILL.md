@@ -9,6 +9,7 @@ Ten minutes of planning saves a reopened ticket. The plan lives in the ticket, s
 
 ## 1. Understand
 
+- First set the ticket to `Status: in-progress` with a Log line (`- HH:MM <you>: started`), so the board shows it is being worked; you have only one `in-progress` at a time.
 - Read the ticket, its acceptance criteria, its Log and any thread about it.
 - Reproduce the problem (or, for new work, run the closest existing behaviour). Cannot reproduce → say so in the Log and ask the author before going on.
 - Read the code around it and its tests; read the project's conventions (CLAUDE.md / AGENTS.md) and follow the patterns of the neighbouring code.

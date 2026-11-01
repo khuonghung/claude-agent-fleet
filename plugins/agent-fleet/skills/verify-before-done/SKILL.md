@@ -47,7 +47,9 @@ Before any claim:
 | `fixed` | the owner | the new test failing before and passing after; the package's checks green |
 | `integrated` | the release manager | the merge commit; the full check suite green on the integration branch |
 | `verified` | the verifier — never the owner or a crew member | each acceptance criterion exercised on the integration branch, with output |
-| `reopened` | the verifier | the criterion that failed, the command and its output |
+| `reopened` | the verifier, a reviewer, or the release manager on a red merge | the criterion that failed (or the check that broke), the command and its output |
+
+The full table of who moves each status, `new` to `duplicate`, is in the protocol (`README.md` of the board).
 
 ## When the check fails
 

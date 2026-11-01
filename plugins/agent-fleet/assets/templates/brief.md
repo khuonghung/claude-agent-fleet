@@ -26,5 +26,5 @@ Load these with the Skill tool when the work calls for them; they hold the team'
 ## Start
 
 1. Record your worktree and branch in your row of `{{boardDir}}/ROSTER.md` by running, from your working folder: `{{rosterCmd}}`{{worktreeNote}}.
-2. Do your duties until your window ends, using the board as the channel; re-read `{{boardDir}}/BOARD.md` and grep `{{boardDir}}/tickets/` for `{{id}}` between tasks. Always use these absolute board paths, even from a worktree.
+2. Do your duties until your window ends, using the board as the channel; set a ticket you own to `in-progress` when you start it and `fixed` when it is committed, each with a Log line; re-read `{{boardDir}}/BOARD.md` and grep `{{boardDir}}/tickets/` for `{{id}}` between tasks. Always use these absolute board paths, even from a worktree.
 3. Before you stop, write `{{boardDir}}/reports/{{id}}.md`: what you did, what you found, what is left and how you would do it.

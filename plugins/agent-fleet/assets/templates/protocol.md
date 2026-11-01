@@ -89,6 +89,26 @@ What happens, where (`path:line`), how to reproduce, expected vs actual.
 
 Status flow: {{flow}}; also {{parked}}. Change a ticket with small edits, never rewrite a file someone else edits; anyone may append to `## Log`.
 
+The `Status:` line holds the status word and nothing else (`- Status: duplicate`, not `duplicate → DA-004`): the reason, the other ticket, the commit go in `Decision:`, `Fix:` or the Log. Each move is made by the member who did the step, with a Log line, the moment it happens — never skip a status, since the dashboard and the delivery lead read where work stands from it:
+
+| To | Set by | When |
+|---|---|---|
+| `new` | whoever files it | the ticket is written (see `write-ticket`) |
+| `triaged` | the product owner | severity, decision and acceptance criteria are written |
+| `assigned` | the delivery lead (or the lead) | `Owner` and `Verifier` are set |
+| `in-progress` | the owner | they start the ticket — before reading code for it, planning or committing; again when they start on a `reopened` one; one `in-progress` per member at a time |
+| `fixed` | the owner | the commit is on their branch and the checks are green; `Fix:` names branch @ commit |
+| `integrated` | the release manager (or the lead) | the fix is merged into the integration branch |
+| `verified` | the verifier — never the owner or a crew member | checked on the integration branch against every criterion, with evidence |
+| `reopened` | the verifier, a reviewer, or the release manager when the merge breaks the checks | the fix misses a criterion or breaks something, with evidence; the owner takes it back to `in-progress` |
+| `deferred` | the product owner; the delivery lead at the freeze | not done in this window (out of time, not started before the freeze), with the reason in `Decision:` |
+| `wont-fix` | the product owner | not a problem, or not worth its cost, with the reason in `Decision:` |
+| `duplicate` | the product owner | the same problem as another ticket: `Decision: duplicate of <ID>`, the extra details copied into that ticket's Log |
+
+Putting a ticket down before it is fixed (blocked, handed over) sets it back to `assigned` with a Log line saying why.
+
+Log times are the local clock when you write the line: read it with `date +%H:%M`, never estimate it. Append Log lines at the end, oldest first.
+
 ## Rules
 
 1. Never commit to `{{base}}`, never push, never open pull requests: the owner reviews and merges.

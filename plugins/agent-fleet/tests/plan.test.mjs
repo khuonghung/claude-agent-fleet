@@ -173,3 +173,28 @@ test("a member in a worktree gets the board's absolute paths and records its row
     fs.rmSync(worktree, { recursive: true, force: true });
   }
 });
+
+test("statuses: every member is told to set in-progress when they start, and fleet status reads it as the dashboard does", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "fleet-"));
+  try {
+    const p = normalizePlan(plan(), { cwd: dir });
+    const { boardDir } = writeBoard(p);
+    const protocol = fs.readFileSync(path.join(boardDir, "README.md"), "utf8");
+    assert.match(protocol, /\| `in-progress` \| the owner \| they start the ticket/);
+    assert.match(protocol, /never skip a status/);
+    for (const status of [...p.board.flow, ...p.board.parked, ...p.board.attention]) assert.ok(protocol.includes(`\n| \`${status}\` |`), `the protocol says who sets ${status}`);
+    assert.match(protocol, /holds the status word and nothing else/);
+    assert.match(protocol, /date \+%H:%M/);
+    const dev = p.agents.find((a) => a.id === "dev-api");
+    assert.match(agentFileOf(p, dev), /never jump from `assigned` to `fixed`/);
+    assert.match(agentFileOf(p, dev), /set the ticket to `in-progress` with a Log line when you start it/);
+    assert.match(briefOf(p, dev), /`in-progress` when you start it/);
+    for (const [id, status] of [["DA-001", "In progress"], ["DA-002", "in_progress"], ["DA-003", "assigned"]]) fs.writeFileSync(path.join(boardDir, "tickets", `${id}.md`), `# ${id}: x\n\n- Status: ${status}\n`);
+    const cli = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "scripts", "fleet.mjs");
+    const run = spawnSync(process.execPath, [cli, "status", "--json", "--fleet", path.dirname(boardDir)], { cwd: dir, encoding: "utf8" });
+    assert.equal(run.status, 0, run.stderr);
+    assert.deepEqual(JSON.parse(run.stdout).statuses, { "in-progress": 2, assigned: 1 });
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

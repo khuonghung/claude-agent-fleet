@@ -36,4 +36,4 @@ Push back with code, tests and links, in the ticket or thread. If it is a design
 
 ## A reopened ticket
 
-Treat it as a new bug in your fix: reproduce the verifier's failing check first (see `investigate-bug`); do not patch around the check. When it passes, set the ticket back to `fixed` with the new commit, the check's output, and a line on what the first fix missed.
+Set it to `in-progress` with a Log line as you pick it up, so the board shows it is being worked. Treat it as a new bug in your fix: reproduce the verifier's failing check first (see `investigate-bug`); do not patch around the check. When it passes, set the ticket back to `fixed` with the new commit, the check's output, and a line on what the first fix missed.
