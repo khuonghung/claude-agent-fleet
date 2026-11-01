@@ -1,25 +1,30 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Agent Fleet">
   <defs>
     <linearGradient id="af-tile" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#232b3b"/>
-      <stop offset="1" stop-color="#0e121a"/>
+      <stop offset="0" stop-color="#262f40"/>
+      <stop offset="1" stop-color="#10141d"/>
     </linearGradient>
     <linearGradient id="af-lead" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffd56b"/>
-      <stop offset="1" stop-color="#ee9f1f"/>
+      <stop offset="0" stop-color="#ffd977"/>
+      <stop offset="1" stop-color="#f0a42a"/>
     </linearGradient>
-    <!-- The two cuts that split the arrow into layers. -->
-    <mask id="af-cuts" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64">
+    <!-- One soft arrow: gently curved sides, rounded corners. -->
+    <path id="af-arrow" d="M32 9 Q38.5 24 52.5 51.5 Q42 42.5 32 40 Q22 42.5 11.5 51.5 Q25.5 24 32 9 Z" stroke-width="4" stroke-linejoin="round"/>
+    <!-- Its three layers, split along two curves like stacked wings. -->
+    <clipPath id="af-tip"><path d="M0 0 H64 V36 H58 Q32 10 6 36 H0 Z"/></clipPath>
+    <clipPath id="af-mid"><path d="M0 36 H6 Q32 10 58 36 H64 V50 H62 Q32 22 2 50 H0 Z"/></clipPath>
+    <clipPath id="af-low"><path d="M0 50 H2 Q32 22 62 50 H64 V64 H0 Z"/></clipPath>
+    <mask id="af-gaps" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64">
       <rect width="64" height="64" fill="#fff"/>
-      <path d="M14 33 L32 24 L50 33 M8 45 L32 33 L56 45" stroke="#000" stroke-width="2.6" fill="none"/>
+      <path d="M6 36 Q32 10 58 36 M2 50 Q32 22 62 50" stroke="#000" stroke-width="2.6" stroke-linecap="round" fill="none"/>
     </mask>
   </defs>
-  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#af-tile)"/>
-  <rect x="2.5" y="2.5" width="59" height="59" rx="13.5" fill="none" stroke="#fff" stroke-opacity=".08"/>
-  <!-- One arrow made of three layers: the lead at its tip, the members behind it, moving as one. -->
-  <g mask="url(#af-cuts)" stroke-width="1.4" stroke-linejoin="round">
-    <path d="M17.6 40.2 L32 33 L46.4 40.2 L52 52 L32 42 L12 52 Z" fill="#8b96ab" stroke="#8b96ab"/>
-    <path d="M23.3 28.4 L32 24 L40.7 28.4 L46.4 40.2 L32 33 L17.6 40.2 Z" fill="#dfe5f0" stroke="#dfe5f0"/>
-    <path d="M32 10 L40.7 28.4 L32 24 L23.3 28.4 Z" fill="url(#af-lead)" stroke="url(#af-lead)"/>
+  <rect x="2" y="2" width="60" height="60" rx="18" fill="url(#af-tile)"/>
+  <rect x="2.5" y="2.5" width="59" height="59" rx="17.5" fill="none" stroke="#fff" stroke-opacity=".08"/>
+  <!-- The lead at the tip, the members behind it, moving as one. -->
+  <g mask="url(#af-gaps)">
+    <use href="#af-arrow" clip-path="url(#af-low)" fill="#8b96ab" stroke="#8b96ab"/>
+    <use href="#af-arrow" clip-path="url(#af-mid)" fill="#e2e7f1" stroke="#e2e7f1"/>
+    <use href="#af-arrow" clip-path="url(#af-tip)" fill="url(#af-lead)" stroke="url(#af-lead)"/>
   </g>
 </svg>

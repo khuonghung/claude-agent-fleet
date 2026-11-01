@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- A softer logo: the same three-layer arrow with gently curved sides and rounded corners, its layers split along arches like stacked wings, on a rounder tile.
 - One Team tab instead of Org chart and Team: the members as cards (what each is doing now) or as the org chart (who reports to whom), one at a time and remembered per viewer, beside the mission plan, the team channel, discussions, who messages whom and the live feed. The members list is gone (its specialty and area are in the member drawer, and a card shows the specialty on hover); the plan's goal is cut to four lines (the rest on hover); an old `#org` link opens the Team tab.
 - Panels fold, on every tab: each is one line with its summary until opened, and each viewer's choice is kept. Reference panels and charts start closed (the mission plan, who messages whom, team pulse, tokens by squad, tickets by status, the commit timeline, pre-flight checks, hotspots, member scores, risks, decisions, notices); each tab's working panels start open (the overview's burn-up, needs attention, discussions, the live feed, the integration round, branches, the ticket results, reports). A panel's controls (the feed's filter, the ticket table's copy and CSV) sit beside its title while it is open. The overview, for one, goes from about 3000 px tall to 1240.
 - The lineup's stage follows the theme: a soft warm light with dark text in the light theme, the night sky in the dark one.
