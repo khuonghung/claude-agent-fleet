@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- One Team tab instead of Org chart and Team: the members as cards (what each is doing now) or as the org chart (who reports to whom), one at a time and remembered per viewer, beside the mission plan, the team channel, discussions, who messages whom and the live feed. The members list is gone (its specialty and area are in the member drawer, and a card shows the specialty on hover); the plan's goal is cut to four lines (the rest on hover); an old `#org` link opens the Team tab.
+
 ## 0.7.0 — 2026-11-01
 
 - A redesigned header: a top bar with the brand and the mission's name, a quiet live dot and the clock with the time left, and compact search, language ("VI") and theme buttons; under it, the mission's phases across the whole width — each as long as it lasts, the done ones tinted, the current one outlined in gold and filled as far as it has gone. A short phase drops its times, then its name (its tooltip keeps both), so labels no longer run into each other on a narrow screen; on a phone the mission's name stays readable.

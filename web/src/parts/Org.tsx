@@ -1,10 +1,11 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { useI18n } from "../i18n";
-import { agentStatus, agentStatusLabel, compact, dateTime, modelLabel } from "../lib";
+import { agentStatus, agentStatusLabel, compact, dateTime } from "../lib";
 import type { AgentDef, FleetState } from "../types";
 import { Icon } from "../ui/Icons";
 import { spotlight } from "../ui/motion";
-import { ModelChip } from "./Fleet";
+import { Slider } from "../ui/Controls";
+import { Fleet, ModelChip } from "./Fleet";
 import { Mascot } from "./Mascot";
 
 /** The ids from a member up to the top of the chart, so hovering a member lights its reporting line. */
@@ -105,7 +106,7 @@ export function MissionPlan({ s, now }: { s: FleetState; now: number }) {
       </div>
       <div className="plan-goal">
         <Icon name="spark" />
-        <p>{s.mission.goal}</p>
+        <p title={s.mission.goal}>{s.mission.goal}</p>
       </div>
       <div className="plan-facts">
         {facts.map((f) => (
@@ -138,61 +139,39 @@ export function MissionPlan({ s, now }: { s: FleetState; now: number }) {
   );
 }
 
-/** Every member's plan beside what it runs now, one card each. */
-export function Members({ s, now, onAgent }: { s: FleetState; now: number; onAgent: (id: string) => void }) {
-  const { t, locale } = useI18n();
+/**
+ * The team, one tab: its members as cards (what each is doing now) or as the org chart (who reports to whom), one at
+ * a time so neither pushes the other down the page; the choice is kept per viewer.
+ */
+export function Team({ s, now, onAgent }: { s: FleetState; now: number; onAgent: (id: string) => void }) {
+  const { t } = useI18n();
+  const [view, setView] = useState<TeamView>(readView);
+  const active = s.agents.filter((a) => agentStatus(s.telemetry[a.id], now).active).length;
+  const choose = (next: TeamView) => {
+    setView(next);
+    try {
+      localStorage.setItem("fleet-team-view", next);
+    } catch {
+      // No storage (a private window): the choice lasts for this visit.
+    }
+  };
   return (
-    <section className="chart-card">
-      <div className="chart-hd">
-        <h2>{t("org.members")}</h2>
-        <p>{s.agents.length}</p>
+    <>
+      <div className="team-bar">
+        <h2>{t("tab.fleet")}</h2>
+        <span>{t("squad.active", { a: active, n: s.agents.length })}</span>
+        <Slider kind="seg" label={t("team.view")} value={view} onChange={choose} items={[{ id: "cards", label: t("team.cards") }, { id: "chart", label: t("org.title") }]} />
       </div>
-      <div className="mem-grid">
-        {s.agents.map((a, i) => {
-          const tele = s.telemetry[a.id];
-          const st = agentStatus(tele, now);
-          const w = a.window ?? { from: s.mission.startAt, to: s.mission.endAt };
-          const runsAs = a.launch === "self" ? t("org.launch.self") : tele?.kind ? t(tele.kind === "subagent" ? "card.subagent" : "card.session") : "";
-          return (
-            <button key={a.id} type="button" className={`mem sq-${a.squad} is-${st.kind}`} style={{ animationDelay: `${i * 35}ms` }} onClick={() => onAgent(a.id)} onPointerMove={spotlight}>
-              <span className="mem-hd">
-                <Mascot agent={a} kind={st.kind} size={36} fuzzy={false} />
-                <span className="mem-id">
-                  <b>{a.name}</b>
-                  <small>{a.title ?? a.role}</small>
-                </span>
-                <span className={`org-state st-${st.kind}`}>
-                  <i />
-                  {agentStatusLabel(t, st)}
-                </span>
-              </span>
-              <span className="mem-tags">
-                <span className="model-chip" title={a.model}>
-                  {modelLabel(a.model)}
-                  {a.effort ? <em>{a.effort}</em> : null}
-                </span>
-                {tele?.model && modelLabel(tele.model) !== modelLabel(a.model) ? <span className="tag is-off">{t("org.actual")}: {modelLabel(tele.model)}</span> : null}
-                {runsAs ? <span className="tag">{runsAs}</span> : null}
-                {a.readOnly ? <span className="tag">{t("org.readOnly")}</span> : null}
-                {a.worktree ? <span className="tag">{t("org.worktree")}</span> : null}
-              </span>
-              {a.specialty ? <span className="mem-spec">{a.specialty}</span> : null}
-              <span className="mem-foot">
-                <span>
-                  <Icon name="clock" size={13} />
-                  {dateTime(w.from, locale)} → {dateTime(w.to, locale)}
-                </span>
-                {(a.owns ?? []).length > 0 && (
-                  <span className="mono" title={(a.owns ?? []).join(", ")}>
-                    <Icon name="layers" size={13} />
-                    {(a.owns ?? []).join(", ")}
-                  </span>
-                )}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    </section>
+      {view === "chart" ? <OrgChart s={s} now={now} onAgent={onAgent} /> : <Fleet s={s} now={now} onAgent={onAgent} />}
+    </>
   );
 }
+
+type TeamView = "cards" | "chart";
+const readView = (): TeamView => {
+  try {
+    return localStorage.getItem("fleet-team-view") === "chart" ? "chart" : "cards";
+  } catch {
+    return "cards";
+  }
+};

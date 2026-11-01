@@ -61,7 +61,7 @@ function AgentCard({ s, agent, now, onOpen }: { s: FleetState; agent: AgentDef; 
   const checks = agent.squad === "quality";
 
   return (
-    <button type="button" className={`card is-${st.kind}`} onClick={onOpen} onPointerMove={spotlight} aria-label={`${agent.name}: ${agentStatusLabel(t, st)}`}>
+    <button type="button" className={`card is-${st.kind}`} onClick={onOpen} onPointerMove={spotlight} aria-label={`${agent.name}: ${agentStatusLabel(t, st)}`} title={agent.specialty || undefined}>
       <div className="card-top">
         <Avatar agent={agent} kind={st.kind} size="lg" cheer={cheerOf(s, agent.id)} />
         <div className="card-id">

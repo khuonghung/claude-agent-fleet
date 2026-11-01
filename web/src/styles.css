@@ -140,7 +140,7 @@ h2, h3 { margin: 0; font-weight: 600; }
 @container (max-width: 30px) { .ph-name { display: none; } }
 
 /* Main */
-.main { padding: 18px max(20px, env(safe-area-inset-left, 0px)) 40px max(20px, env(safe-area-inset-right, 0px)); display: grid; gap: 18px; max-width: 1840px; margin: 0 auto; }
+.main { padding: 10px max(12px, env(safe-area-inset-left, 0px)) 40px max(20px, env(safe-area-inset-right, 0px)); display: grid; gap: 18px; margin: 0 auto; }
 .goal { margin: 0; color: var(--muted); max-width: 90ch; }
 .layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 400px); gap: 18px; align-items: start; }
 .col-main, .col-side { display: grid; gap: 18px; min-width: 0; }
@@ -174,6 +174,10 @@ h2, h3 { margin: 0; font-weight: 600; }
 .sq-quality .squad-hd h2 { color: var(--sq-quality); }
 .squad-hd span { font-size: 12px; color: var(--faint); }
 .squad-count { margin-left: auto; font-family: var(--font); }
+.team-bar { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.team-bar h2 { margin: 0; font-size: 15px; font-weight: 600; }
+.team-bar > span { font-size: 12.5px; color: var(--faint); }
+.team-bar .seg { margin-left: auto; }
 .squad-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 10px; }
 
 .card {
@@ -558,10 +562,10 @@ h2, h3 { margin: 0; font-weight: 600; }
 .org-node:hover { transform: translateY(-1px); border-color: var(--line-2); }
 .org-node.is-running, .org-node.is-thinking { border-color: color-mix(in srgb, var(--gold) 50%, var(--line)); }
 /* The squad shows as a small dot before the member's title, not as a coloured edge */
-.org-node .org-id > span:first-of-type::before, .mem-id small::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; background: var(--faint); vertical-align: 1px; }
-.org-node.sq-command .org-id > span:first-of-type::before, .mem.sq-command .mem-id small::before { background: var(--sq-command); }
-.org-node.sq-build .org-id > span:first-of-type::before, .mem.sq-build .mem-id small::before { background: var(--sq-build); }
-.org-node.sq-quality .org-id > span:first-of-type::before, .mem.sq-quality .mem-id small::before { background: var(--sq-quality); }
+.org-node .org-id > span:first-of-type::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; background: var(--faint); vertical-align: 1px; }
+.org-node.sq-command .org-id > span:first-of-type::before { background: var(--sq-command); }
+.org-node.sq-build .org-id > span:first-of-type::before { background: var(--sq-build); }
+.org-node.sq-quality .org-id > span:first-of-type::before { background: var(--sq-quality); }
 .org-id { display: grid; gap: 1px; min-width: 0; }
 .org-id b { font: 500 13px var(--font); }
 .org-id > span { font-size: 11.5px; color: var(--muted); white-space: nowrap; }

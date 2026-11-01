@@ -6,12 +6,11 @@ import { Channel } from "./parts/Channel";
 import { Comms } from "./parts/Comms";
 import { Drawer, type Open } from "./parts/Drawer";
 import { Feed } from "./parts/Feed";
-import { Fleet } from "./parts/Fleet";
 import { Flow } from "./parts/Flow";
 import { Header, type Theme } from "./parts/Header";
 import { Kpis } from "./parts/Kpis";
 import { LooksContext, useLooks } from "./parts/Mascot";
-import { Members, MissionPlan, OrgChart } from "./parts/Org";
+import { MissionPlan, Team } from "./parts/Org";
 import { Attention, Lineup } from "./parts/Overview";
 import { BranchList, CodeKpis, CommitTimeline, Hotspots, IntegrationRound, Preflight } from "./parts/Code";
 import { Decisions, MemberScores, Risks, Scorecard, TicketTable } from "./parts/Report";
@@ -23,7 +22,7 @@ import { Logo } from "./ui/Logo";
 import type { AgentDef } from "./types";
 import { useFleet, useNow } from "./useFleet";
 
-const TABS = ["overview", "org", "fleet", "tickets", "code", "reports"] as const;
+const TABS = ["overview", "fleet", "tickets", "code", "reports"] as const;
 type Tab = (typeof TABS)[number];
 
 const stored = (key: string): string | null => {
@@ -46,7 +45,8 @@ const readTheme = (): Theme => {
   return t === "dark" || t === "light" ? t : "system";
 };
 const NO_AGENTS: AgentDef[] = [];
-const tabFromHash = (): Tab => TABS.find((t) => `#${t}` === location.hash) ?? "overview";
+// The org chart was a tab of its own: an old #org link opens the team, where it now lives.
+const tabFromHash = (): Tab => (location.hash === "#org" ? "fleet" : (TABS.find((t) => `#${t}` === location.hash) ?? "overview"));
 
 export function App() {
   const { state, link, lastAt } = useFleet();
@@ -107,7 +107,7 @@ export function App() {
 
   const tickets = state.board?.tickets ?? [];
   const counts: Partial<Record<Tab, string>> = {
-    org: `${state.agents.length}`,
+    fleet: `${state.agents.length}`,
     tickets: `${tickets.length}`,
     // The members' own commits: the integration branch holds the same commits again.
     code: `${state.git?.branches.filter((b) => b.branch !== state.git?.integration).reduce((n, b) => n + b.commits.filter((c) => !c.merge).length, 0) ?? 0}`,
@@ -160,22 +160,13 @@ export function App() {
               </>
             )}
 
-            {tab === "org" && (
-              <>
-                <OrgChart s={state} now={now} onAgent={onAgent} />
-                <div className="pair pair-wide">
-                  <Members s={state} now={now} onAgent={onAgent} />
-                  <MissionPlan s={state} now={now} />
-                </div>
-              </>
-            )}
-
             {tab === "fleet" && (
               <div className="layout">
                 <div className="col-main">
-                  <Fleet s={state} now={now} onAgent={onAgent} />
+                  <Team s={state} now={now} onAgent={onAgent} />
                 </div>
                 <div className="col-side">
+                  <MissionPlan s={state} now={now} />
                   {state.board?.channel && <Channel s={state} now={now} onAgent={onAgent} onTicket={onTicket} onDoc={onDoc} />}
                   <Threads s={state} now={now} onAgent={onAgent} onDoc={onDoc} />
                   <Comms s={state} />
