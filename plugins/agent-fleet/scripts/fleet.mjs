@@ -22,7 +22,7 @@ import fs from "node:fs";
 import http from "node:http";
 import net from "node:net";
 import path from "node:path";
-import { CHANNEL_HEAD, hhmm, launchPlan, writeAgents, writeBoard } from "./lib/board-init.mjs";
+import { branchOf, CHANNEL_HEAD, hhmm, launchPlan, writeAgents, writeBoard } from "./lib/board-init.mjs";
 import { estimateFleet, memberEstimate } from "./lib/estimate.mjs";
 import { addToPlan, budgetState, catalog, contextState, modelId, normalizePlan, PLUGIN_ROOT, readFleet } from "./lib/plan.mjs";
 import { normStatus } from "./server/board.mjs";
@@ -374,7 +374,7 @@ switch (command) {
       "--effort",
       agent.effort,
       ...(modelId(agent.model) ? ["--model", modelId(agent.model)] : []),
-      ...(agent.worktree ? ["--worktree", `${fleet.mission.slug}-${agent.id}`.slice(0, 40)] : []),
+      ...(agent.worktree ? ["--worktree", branchOf(fleet, agent, 40)] : []),
       ...(flag("permission-mode") === undefined ? [] : ["--permission-mode", flag("permission-mode")]),
     ];
     // Compact at the fleet's context size instead of near the model's limit: every call re-reads the whole context.

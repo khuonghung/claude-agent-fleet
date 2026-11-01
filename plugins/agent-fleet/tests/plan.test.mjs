@@ -6,7 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { agentFileOf, briefOf, hhmm, launchPlan, prefixes, writeAgents, writeBoard } from "../scripts/lib/board-init.mjs";
+import { agentFileOf, branchOf, briefOf, hhmm, launchPlan, prefixes, writeAgents, writeBoard } from "../scripts/lib/board-init.mjs";
 import { addToPlan, codeOf, defaultPhases, normalizePlan, readFleet, slugOf, transcriptFolderOf } from "../scripts/lib/plan.mjs";
 
 const plan = (extra = {}) => ({
@@ -106,6 +106,14 @@ test("init writes the board, one brief per member and the current pointer; ticke
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test("every member gets its own branch, even under a long fleet slug", () => {
+  const fleet = { mission: { slug: "kintsugi-backlog-sweep-3" } };
+  const ids = ["dev-core", "dev-web", "qa", "qa2"];
+  const branches = ids.map((id) => branchOf(fleet, { id }));
+  assert.deepEqual(branches, ["kbs3-dev-core", "kbs3-dev-web", "kbs3-qa", "kbs3-qa2"]);
+  assert.equal(branchOf({ mission: { slug: "night-team" } }, { id: "dev-api" }), "night-team-dev-api");
 });
 
 test("ticket prefixes are unique initials", () => {

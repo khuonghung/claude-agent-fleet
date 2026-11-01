@@ -196,6 +196,16 @@ export function writeAgents(fleet) {
   return { dir, installed: install ? projectAgents : undefined, members: written };
 }
 
+/**
+ * A member's branch (and worktree) name: `<slug>-<id>`, or `<slug initials>-<id>` when that is longer than `max`
+ * ("kintsugi-backlog-sweep-3" → "kbs3-dev-core"). The id is never cut, so no two members share a branch.
+ */
+export function branchOf(fleet, agent, max = 24) {
+  const slug = fleet.mission.slug;
+  if (slug.length + agent.id.length + 1 <= max) return `${slug}-${agent.id}`;
+  return `${slug.split("-").filter(Boolean).map((part) => part[0]).join("")}-${agent.id}`;
+}
+
 /** What `/agent-fleet:launch` starts, one entry per member: how, with which model and effort, and the brief. */
 export function launchPlan(fleet) {
   const agentsDir = path.join(path.dirname(fleet.board.dir), "agents");
@@ -211,7 +221,7 @@ export function launchPlan(fleet) {
     effort: a.effort,
     worktree: a.worktree,
     readOnly: a.readOnly,
-    branch: `${fleet.mission.slug}-${a.id}`.slice(0, 24),
+    branch: branchOf(fleet, a),
     brief: path.join(fleet.board.dir, "briefs", `${a.id}.md`),
   }));
 }

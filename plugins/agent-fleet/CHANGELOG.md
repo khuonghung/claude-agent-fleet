@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Every member gets its own branch. `fleet launch-plan` named branches `<slug>-<id>` cut to 24 characters, so a slug of 24 characters or more (`kintsugi-backlog-sweep-3`) gave every member the same branch. The id is now never cut: when `<slug>-<id>` is too long, the slug's initials stand for it (`kbs3-dev-core`). `fleet spawn` names worktrees the same way.
+
 ## 0.5.0 — 2026-11-01
 
 - Context kept lean to save tokens. Every model call re-reads a member's whole context, so a member that carries its last ticket into the next pays for it on every step. The plan's new `context.compactAt` (100k tokens by default, 100k to 1M, 0 for off) is the size members are kept under:
