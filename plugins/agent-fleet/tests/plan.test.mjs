@@ -4,7 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { agentFileOf, briefOf, launchPlan, prefixes, writeAgents, writeBoard } from "../scripts/lib/board-init.mjs";
 import { codeOf, defaultPhases, normalizePlan, readFleet, slugOf, transcriptFolderOf } from "../scripts/lib/plan.mjs";
 
@@ -195,6 +195,35 @@ test("statuses: every member is told to set in-progress when they start, and fle
     assert.equal(run.status, 0, run.stderr);
     assert.deepEqual(JSON.parse(run.stdout).statuses, { "in-progress": 2, assigned: 1 });
   } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("a Windows checkout (CRLF templates and skills) still writes LF agents, briefs and protocol", async () => {
+  const pluginRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
+  const copy = fs.mkdtempSync(path.join(os.tmpdir(), "fleet-crlf-"));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "fleet-"));
+  try {
+    // The plugin as core.autocrlf checks it out: every text file with CRLF line ends.
+    for (const sub of ["scripts", "assets", "skills"]) fs.cpSync(path.join(pluginRoot, sub), path.join(copy, sub), { recursive: true });
+    for (const file of fs.readdirSync(copy, { recursive: true }).map((f) => path.join(copy, f))) {
+      if (/\.(md|mjs|json)$/.test(file)) fs.writeFileSync(file, fs.readFileSync(file, "utf8").replace(/\r?\n/g, "\r\n"));
+    }
+    const { normalizePlan: normalize } = await import(pathToFileURL(path.join(copy, "scripts", "lib", "plan.mjs")).href);
+    const { agentFileOf: agentOf, briefOf: briefFor, writeBoard: write } = await import(pathToFileURL(path.join(copy, "scripts", "lib", "board-init.mjs")).href);
+    const p = normalize(plan(), { cwd: dir });
+    const dev = p.agents.find((a) => a.id === "dev-api");
+    const agent = agentOf(p, dev);
+    assert.ok(agent.startsWith("---\nname: fleet-night-team-dev-api\n"), JSON.stringify(agent.slice(0, 60)));
+    assert.ok(!agent.includes("\r"), "the agent file has no CR");
+    assert.ok(!briefFor(p, dev).includes("\r"), "the brief has no CR");
+    const { boardDir } = write(p);
+    assert.ok(!fs.readFileSync(path.join(boardDir, "README.md"), "utf8").includes("\r"), "the protocol has no CR");
+    const help = spawnSync(process.execPath, [path.join(copy, "scripts", "fleet.mjs")], { encoding: "utf8" });
+    assert.match(help.stdout, /^ +fleet catalog +the roles/m);
+    assert.ok(!help.stdout.includes("\r"), "the help has no CR");
+  } finally {
+    fs.rmSync(copy, { recursive: true, force: true });
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });

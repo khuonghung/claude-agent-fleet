@@ -279,5 +279,5 @@ switch (command) {
   }
 
   default:
-    out(fs.readFileSync(new URL(import.meta.url), "utf8").split("\n").filter((l) => l.startsWith("//")).slice(1, 13).map((l) => l.slice(3)).join("\n"));
+    out(fs.readFileSync(new URL(import.meta.url), "utf8").split(/\r?\n/).filter((l) => l.startsWith("//")).slice(1, 13).map((l) => l.slice(3)).join("\n"));
 }

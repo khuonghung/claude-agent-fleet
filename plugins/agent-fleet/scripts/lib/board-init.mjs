@@ -5,7 +5,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { catalog, modelId, PLUGIN_ROOT, skills } from "./plan.mjs";
 
-const template = (name) => fs.readFileSync(path.join(PLUGIN_ROOT, "assets", "templates", name), "utf8");
+// A Windows checkout (core.autocrlf) gives the templates CRLF line ends; what we write is always LF.
+const template = (name) => fs.readFileSync(path.join(PLUGIN_ROOT, "assets", "templates", name), "utf8").replace(/\r\n?/g, "\n");
 const fill = (text, values) => text.replace(/\{\{(\w+)\}\}/g, (_, key) => String(values[key] ?? ""));
 const when = (iso) => new Date(iso).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
 const writeIfMissing = (file, text) => {
