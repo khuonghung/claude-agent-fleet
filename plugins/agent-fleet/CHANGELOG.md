@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Add members while the fleet works: `/agent-fleet:add` proposes a member the fleet needs (role, area, model, effort), shows its estimated tokens against the limit, and launches it. Under it, `fleet add <member.json> [--dry-run]` adds one member or several to `fleet.json` — the others, their session ids and the fleet's times kept — writes the new brief and agent, adds the roster rows and the protocol's roster, notes it in `NOTICES.md`, posts a heads-up on the team channel, and prints what to launch. A new member works from now to the end unless given a window; a second lead, a used id or an ended fleet are refused, and an area another builder owns is a warning. The dashboard picks the member up by itself.
+- Re-running `fleet init` adds a row to `ROSTER.md` for a member it lacks, instead of leaving the roster as it was.
+
 ## 0.4.0 — 2026-11-01
 
 - The dashboard re-reads `fleet.json` when it changes — members added, removed or renamed, a session id recorded by `fleet spawn`, the window, the token limit, the board folder — without a restart; a file caught mid-write is skipped and the last good plan kept. The port is read only at start.
