@@ -12,7 +12,7 @@
       "name": "agent-fleet",
       "source": "./plugins/agent-fleet",
       "description": "Plan, launch and watch a fleet of Claude Code agents with a live, multilingual dashboard.",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "homepage": "https://github.com/khuonghung/claude-agent-fleet",
       "repository": "https://github.com/khuonghung/claude-agent-fleet",
       "license": "Apache-2.0"

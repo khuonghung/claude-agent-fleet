@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.6.0 — 2026-11-01
 
 - A more professional logo: one flat arrow in three layers — the lead at its gold tip, the members behind it in silver and slate — on a dark tile, replacing the mascot trio. It is still, with no blinking or twinkle, in the dashboard header, the loading screen, the favicon and the README.
 - Give a running fleet more time: `/agent-fleet:extend` ("2 hours", "until 18:00") shows the new end, the phases, the members whose window moves and the tokens the fleet is now expected to write against the limit, then on a yes runs `fleet extend --hours N | --to T [--dry-run]`. The phase in progress grows (the work phase during the start-up) and the later ones (freeze, reports) move with the end, keeping their length; windows that ended with the fleet move too. It rewrites `fleet.json`, the board's README (end and timeline), every brief and every agent — tickets, reports, roster and session ids kept — notes it in `NOTICES.md`, posts it on the team channel, and prints the one line the lead sends to each running member. No more editing `endAt`, the phases and the timeline by hand while the briefs still say the old end.
