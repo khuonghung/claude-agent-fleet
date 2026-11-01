@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { I18nContext, LANGUAGES, type Lang, pickLanguage, translator } from "./i18n";
 import { launched } from "./lib";
 import { BurnUp, ChartCard, Funnel, Pulse, TokenBurn } from "./parts/Charts";
+import { Channel } from "./parts/Channel";
 import { Comms } from "./parts/Comms";
 import { Drawer, type Open } from "./parts/Drawer";
 import { Feed } from "./parts/Feed";
@@ -144,6 +145,7 @@ export function App() {
                 </div>
                 <div className="col-side">
                   <Attention s={state} now={now} onTicket={onTicket} onAgent={onAgent} />
+                  {(state.board?.channel?.posts.length ?? 0) > 0 && <Channel s={state} now={now} onAgent={onAgent} onTicket={onTicket} onDoc={onDoc} />}
                   {(state.board?.threads ?? []).some((x) => x.status === "open") && <Threads s={state} now={now} onAgent={onAgent} onDoc={onDoc} />}
                   <Feed s={state} onTicket={onTicket} onAgent={onAgent} />
                 </div>
@@ -167,6 +169,7 @@ export function App() {
                 <Fleet s={state} now={now} onAgent={onAgent} />
               </div>
               <div className="col-side">
+                {state.board?.channel && <Channel s={state} now={now} onAgent={onAgent} onTicket={onTicket} onDoc={onDoc} />}
                 <Threads s={state} now={now} onAgent={onAgent} onDoc={onDoc} />
                 <Comms s={state} />
                 <Feed s={state} onTicket={onTicket} onAgent={onAgent} />

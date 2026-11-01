@@ -115,9 +115,22 @@ export interface Thread {
   posts: Post[];
 }
 
+export type ChannelKind = "heads-up" | "ask" | "answer" | "fyi" | "post";
+
+/** One line of the team channel (`CHANNEL.md`). */
+export interface ChannelPost {
+  time: string;
+  at: string;
+  who: string;
+  kind: ChannelKind;
+  text: string;
+}
+
 export interface Board {
   tickets: Ticket[];
   threads?: Thread[];
+  /** The team channel's last posts, oldest first; null on a board from before the channel. */
+  channel?: { updated: string; posts: ChannelPost[] } | null;
   roster: Record<string, RosterRow>;
   reports: Report[];
   notices: string;

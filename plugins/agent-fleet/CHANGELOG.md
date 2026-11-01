@@ -13,6 +13,7 @@
 - A Windows checkout (`core.autocrlf`) no longer breaks generated files: templates are read with LF line ends, so agents keep valid front matter and briefs and the protocol carry no stray CR.
 - Team channel: `CHANNEL.md` on the board for short news everyone needs now (heads-up, ask, answer, fyi), one line per post. `fleet say <member|owner> <kind> <text>` posts with the clock's time and one append per post, so posts at the same moment never erase each other. The protocol, briefs and agents say when to use it (and when a ticket, thread or direct message is the place instead), `team-communication` lists it, and members broadcast there instead of in `NOTICES.md`, which stays the lead's.
 - The dashboard server reads the team channel: its last 200 posts with their kinds, on the mission's clock (a guessed future time read as the file's save, as in tickets), and serves `CHANNEL.md` to the document drawer.
+- Dashboard: the team channel as a chat channel — messages grouped by member, time dividers after a quiet stretch, kind badges (a heads-up stands out), `code`, ticket ids that open the ticket and members' ids as mentions, who posted in the last half hour, a "new" pill when you have scrolled up, and a composer that shows (and copies) the `fleet say` command. It opens large in a dialog; channel posts also appear in the live feed. In the side column of Overview (once there are posts) and Team.
 
 ## 0.3.0 — 2026-11-01
 

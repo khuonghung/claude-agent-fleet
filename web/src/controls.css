@@ -187,6 +187,68 @@ kbd { font: 500 10.5px var(--mono); color: var(--muted); background: var(--panel
 .po-kind.k-decision, .po-kind.k-agree, .po-kind.k-ready { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, var(--line)); }
 .po-kind.k-concern, .po-kind.k-blocked { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 40%, var(--line)); }
 .po-kind.k-proposal, .po-kind.k-question { color: var(--info); border-color: color-mix(in srgb, var(--info) 40%, var(--line)); }
+/* Team channel: a chat channel — message groups, time dividers, a composer that shows how to post. */
+.channel { position: relative; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; padding: 0; overflow: hidden; }
+.cn-hd { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-bottom: 1px solid var(--line); background: var(--panel-2); }
+.cn-hash { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; background: var(--gold-soft); color: var(--gold); font: 600 16px var(--mono); }
+.cn-name { display: grid; min-width: 0; line-height: 1.25; }
+.cn-name b { font-size: 13.5px; }
+.cn-name small { font-size: 11.5px; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cn-here { margin-left: auto; display: flex; align-items: center; }
+.cn-here > * { margin-left: -6px; border-radius: 50%; box-shadow: 0 0 0 2px var(--panel-2); }
+.cn-here em { font: 500 11px var(--mono); font-style: normal; color: var(--muted); padding-left: 9px; box-shadow: none; }
+.cn-doc { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--muted); cursor: pointer; transition: color .15s, border-color .15s; }
+.cn-doc:hover { color: var(--ink); border-color: var(--line-2); }
+
+.cn-scroll { max-height: 420px; overflow: auto; overscroll-behavior: contain; padding: 6px 0 10px; scrollbar-width: thin; }
+.cn-list { list-style: none; margin: 0; padding: 0; }
+.cn-divider { display: flex; align-items: center; gap: 10px; margin: 10px 14px 4px; color: var(--faint); font: 500 10.5px var(--mono); }
+.cn-divider::before, .cn-divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.cn-group { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 10px; padding: 6px 14px 2px; animation: rise .3s var(--ease) both; }
+.cn-av { width: 30px; height: 30px; display: grid; place-items: center; border: 0; padding: 0; background: none; cursor: pointer; align-self: start; }
+.cn-owner-av { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--gold-soft); color: var(--gold); cursor: default; }
+.cn-owner-av.is-sm { width: 24px; height: 24px; }
+.cn-meta { display: flex; align-items: baseline; gap: 6px; min-width: 0; font-size: 12.5px; }
+.cn-meta b { white-space: nowrap; }
+.cn-role { color: var(--faint); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.cn-badge { font: 600 10px var(--mono); text-transform: uppercase; letter-spacing: .04em; color: var(--gold); background: var(--gold-soft); padding: 1px 6px; border-radius: 999px; }
+.cn-meta time { margin-left: auto; font-size: 10.5px; color: var(--faint); flex: none; }
+.cn-msgs { min-width: 0; display: grid; gap: 1px; }
+.cn-msg { position: relative; display: block; margin: 0 -8px; padding: 3px 8px; border-radius: 7px; font-size: 13px; line-height: 1.5; color: var(--ink); overflow-wrap: anywhere; transition: background .15s; }
+.cn-msg:hover { background: var(--panel-2); }
+.cn-msg.k-heads-up { background: color-mix(in srgb, var(--warn) 9%, transparent); }
+.cn-msg.k-heads-up:hover { background: color-mix(in srgb, var(--warn) 14%, transparent); }
+.cn-gutter { position: absolute; left: -40px; top: 5px; width: 34px; text-align: right; font-size: 10px; color: var(--faint); opacity: 0; transition: opacity .15s; }
+.cn-msg:hover .cn-gutter { opacity: 1; }
+.cn-msgs > .cn-msg:nth-child(2) .cn-gutter { display: none; }
+.cn-kind { display: inline-block; margin-right: 6px; font: 600 10px var(--mono); text-transform: uppercase; letter-spacing: .03em; padding: 1px 6px; border-radius: 999px; vertical-align: 1px; }
+.cn-kind.k-heads-up { color: var(--warn); background: color-mix(in srgb, var(--warn) 16%, transparent); }
+.cn-kind.k-ask { color: var(--info); background: color-mix(in srgb, var(--info) 14%, transparent); }
+.cn-kind.k-answer { color: var(--ok); background: color-mix(in srgb, var(--ok) 14%, transparent); }
+.cn-text code { font: 12px var(--mono); padding: 1px 5px; border-radius: 5px; background: var(--panel-2); border: 1px solid var(--line); }
+.cn-msg:hover .cn-text code { background: var(--panel); }
+.cn-mention { color: var(--info); background: color-mix(in srgb, var(--info) 12%, transparent); padding: 0 3px; border-radius: 4px; font-weight: 500; }
+.cn-ticket { font-size: 12px; padding: 0 5px; border-radius: 5px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
+.cn-ticket:hover { border-color: var(--gold); background: var(--gold-soft); }
+.cn-empty { display: grid; justify-items: center; gap: 6px; padding: 28px 18px; color: var(--faint); text-align: center; }
+.cn-empty p { margin: 0; font-size: 12.5px; max-width: 30ch; }
+
+.cn-fresh { position: absolute; left: 50%; bottom: 62px; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 4px; padding: 4px 11px; border-radius: 999px; border: 0; background: var(--ink); color: var(--panel); font-size: 11.5px; font-weight: 500; cursor: pointer; box-shadow: var(--shadow); animation: pop .25s var(--ease) both; }
+.cn-compose { display: flex; align-items: center; gap: 8px; margin: 0 12px 12px; padding: 9px 11px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel-2); color: var(--faint); cursor: pointer; text-align: left; transition: border-color .15s; }
+.cn-compose:hover { border-color: var(--line-2); }
+.cn-compose code { flex: 1; min-width: 0; font: 12px var(--mono); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cn-copy { font-size: 11px; font-weight: 500; color: var(--muted); padding: 2px 8px; border-radius: 6px; background: var(--panel); border: 1px solid var(--line); }
+.cn-copy.is-done { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, var(--line)); }
+/* Opened large: a centred dialog, the list filling its height, a touch more room for reading. */
+.cn-wrap { position: fixed; inset: 0; z-index: 65; display: grid; place-items: center; padding: 4vh 16px; background: rgba(8, 10, 14, .45); backdrop-filter: blur(4px); animation: fade .18s ease-out; }
+.cn-dialog { width: min(880px, 100%); height: min(860px, 90vh); display: grid; animation: tmIn .34s var(--spring); }
+.channel.is-big { height: 100%; border-radius: 16px; box-shadow: var(--pop); }
+.channel.is-big .cn-hd { padding: 14px 18px; }
+.channel.is-big .cn-scroll { max-height: none; padding: 10px 6px 14px; }
+.channel.is-big .cn-group { padding-left: 20px; padding-right: 20px; }
+.channel.is-big .cn-msg { font-size: 14px; }
+.channel.is-big .cn-compose { margin: 0 18px 16px; }
+@media (prefers-reduced-motion: reduce) { .cn-group, .cn-fresh, .cn-wrap, .cn-dialog { animation: none; } }
 .po-text { display: block; font-size: 12.5px; color: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; margin-top: 2px; }
 .po-decision .po-text { color: var(--ink); }
 

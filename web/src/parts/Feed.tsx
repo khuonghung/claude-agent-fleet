@@ -47,6 +47,9 @@ export function Feed({ s, onTicket, onAgent }: { s: FleetState; onTicket: (id: s
         out.push({ key: `p-${th.name}-${i}`, at: Date.parse(p.at), kind: "agent", agent: agentIn(s, p.who), tag: `#${th.name}`, text: `${t(`th.k.${p.kind}`)} · ${p.text.split("\n")[0]}` });
       }
     }
+    for (const [i, p] of (s.board?.channel?.posts ?? []).entries()) {
+      out.push({ key: `cn-${i}-${p.at}`, at: Date.parse(p.at), kind: "agent", agent: agentIn(s, p.who), tag: t("cn.tag"), text: `${t(`cn.k.${p.kind}`)} · ${p.text}` });
+    }
     for (const [i, x] of s.transitions.entries()) {
       out.push({ key: `t-${x.id}-${i}`, at: Date.parse(x.at), kind: "ticket", tag: x.id, text: x.from ? `${statusLabel(t, x.from)} → ${statusLabel(t, x.to)}` : t("feed.newTicket", { status: statusLabel(t, x.to) }), ticket: x.id });
     }
