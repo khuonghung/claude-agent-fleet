@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 import { agentFileOf, briefOf, launchPlan, prefixes, writeAgents, writeBoard } from "../scripts/lib/board-init.mjs";
 import { codeOf, defaultPhases, normalizePlan, readFleet, slugOf, transcriptFolderOf } from "../scripts/lib/plan.mjs";
 
@@ -141,5 +143,33 @@ test("init generates one agent per member from the plan, and installs them as pr
     assert.ok(!fs.existsSync(path.join(installed, "fleet-night-team-lead.md")), "the lead is this session, not an agent");
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("a member in a worktree gets the board's absolute paths and records its row from outside the main checkout", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "fleet-"));
+  const worktree = fs.mkdtempSync(path.join(os.tmpdir(), "fleet-wt-"));
+  try {
+    const p = normalizePlan(plan(), { cwd: dir });
+    const { boardDir } = writeBoard(p);
+    const board = boardDir.replaceAll("\\", "/");
+    const fleetDir = path.dirname(boardDir).replaceAll("\\", "/");
+    const protocol = fs.readFileSync(path.join(boardDir, "README.md"), "utf8");
+    assert.match(protocol, /## Writing to the board from a worktree/);
+    assert.ok(protocol.includes(`grep -l <your id> ${board}/threads/*.md`));
+    assert.ok(protocol.includes(`roster <your id> worktree="$(git rev-parse --show-toplevel)" branch="$(git branch --show-current)" --fleet "${fleetDir}"`));
+    const dev = p.agents.find((a) => a.id === "dev-api");
+    assert.ok(briefOf(p, dev).includes(`roster dev-api worktree=`));
+    assert.ok(agentFileOf(p, dev).includes(`read and write it only at \`${board}\``));
+    // The worktree has no .fleet above it: `--fleet` (after the pairs, as the protocol writes it) finds the board.
+    const cli = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "scripts", "fleet.mjs");
+    const run = spawnSync(process.execPath, [cli, "roster", "dev-api", `worktree=${worktree}`, "branch=night-team-dev-api", "--fleet", fleetDir], { cwd: worktree, encoding: "utf8" });
+    assert.equal(run.status, 0, run.stderr);
+    const row = fs.readFileSync(path.join(boardDir, "ROSTER.md"), "utf8").split("\n").find((l) => l.startsWith("| dev-api "));
+    assert.ok(row.includes(` ${worktree} | night-team-dev-api |`), row);
+    assert.ok(!fs.existsSync(path.join(worktree, ".fleet")));
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+    fs.rmSync(worktree, { recursive: true, force: true });
   }
 });

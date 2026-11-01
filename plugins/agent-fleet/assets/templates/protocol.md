@@ -9,7 +9,7 @@ Board: `{{boardDir}}`. Dashboard: run `/agent-fleet:dashboard` (or open the URL 
 
 {{roster}}
 
-Message a teammate with `SendMessage` and `to` = their session id from `ROSTER.md` (a desktop session) or their name (a subagent). A message to a busy session waits until its turn ends, so **the board is the channel and a message is only the doorbell**: assignments live in the tickets and `BOARD.md`, discussions in `threads/`, and everyone re-reads `BOARD.md`, greps `tickets/` and `threads/` for their id between tasks. The `team-communication` skill has the rules.
+Message a teammate with `SendMessage` and `to` = their session id from `ROSTER.md` (a desktop session) or their name (a subagent). A message to a busy session waits until its turn ends, so **the board is the channel and a message is only the doorbell**: assignments live in the tickets and `BOARD.md`, discussions in `threads/`, and everyone re-reads `BOARD.md`, greps `{{boardDir}}/tickets/` and `{{boardDir}}/threads/` for their id between tasks. The `team-communication` skill has the rules.
 
 ## Working together
 
@@ -51,6 +51,16 @@ Rules: append posts at the end, never edit another member's post; after posting,
 | `reports/<id>.md` | that member only | running notes and the end report |
 | `FINAL-REPORT.md` | the delivery lead (or the lead) | the report for the owner |
 | `briefs/<id>.md` | the lead | each member's brief |
+
+## Writing to the board from a worktree
+
+The board is one folder in the main checkout, `{{boardDir}}`, shared by every member. It is not in git (`.fleet/` is excluded), so a worktree has no copy of it and nothing on it travels through branches or merges. A member working in their own worktree:
+
+1. Reads and writes board files only by their absolute path under `{{boardDir}}`. A relative `.fleet/…`, `tickets/…` or `threads/…` from the worktree points somewhere else; grep the same way: `grep -l <your id> {{boardDir}}/threads/*.md`.
+2. Never creates `.fleet/` or board files inside the worktree, and never `git add`s or commits them: a board edit is seen by everyone the moment it is saved, and a commit carries product code only.
+3. Records their worktree and branch in their row with the fleet CLI, run as is from the worktree: `{{rosterCmd}}`.
+4. Writes paths in tickets and posts relative to the repository root (`src/api/users.ts:42`), never to their worktree, so they mean the same file to every member.
+5. If a write to the board is refused (a declined permission prompt, a sandbox that allows only the worktree), stops and tells the lead with `SendMessage` what was refused; never works around it with a copy of the board in the worktree.
 
 ## Tickets
 

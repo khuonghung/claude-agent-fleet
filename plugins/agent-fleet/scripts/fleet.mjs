@@ -151,7 +151,8 @@ switch (command) {
 
   case "roster": {
     const fleet = readFleet(currentFleetFile());
-    const [id, ...pairs] = args;
+    // `--fleet <dir>` may come anywhere: the rest is the member and its key=value pairs.
+    const [id, ...pairs] = args.filter((a, i) => a !== "--fleet" && args[i - 1] !== "--fleet");
     const file = path.join(fleet.board.dir, "ROSTER.md");
     const columns = { session: 3, worktree: 4, branch: 5 };
     const lines = fs.readFileSync(file, "utf8").split(/\r?\n/).map((line) => {

@@ -28,6 +28,10 @@ export function prefixes(agents) {
 const skillList = (agent) =>
   (agent.skills ?? []).length === 0 ? "(none)" : agent.skills.map((name) => `- \`agent-fleet:${name}\` — ${(skills[name] ?? "").split(/(?<=\.)\s/).slice(-1)[0]}`).join("\n");
 
+/** The shell command that records a member's worktree and branch in ROSTER.md, run as is from any folder (a worktree too). */
+const rosterCmd = (fleet, id) =>
+  `node "${path.join(PLUGIN_ROOT, "scripts", "fleet.mjs").replaceAll("\\", "/")}" roster ${id} worktree="$(git rev-parse --show-toplevel)" branch="$(git branch --show-current)" --fleet "${path.dirname(fleet.board.dir).replaceAll("\\", "/")}"`;
+
 export function briefOf(fleet, agent) {
   const boss = fleet.agents.find((a) => a.id === agent.reportsTo);
   const window = agent.window ?? { from: fleet.mission.startAt, to: fleet.mission.endAt };
@@ -46,7 +50,8 @@ export function briefOf(fleet, agent) {
     specialty: agent.specialty || "(none beyond your role)",
     owns: agent.owns.length > 0 ? agent.owns.map((p) => `- \`${p}\``).join("\n") : agent.readOnly ? "You read; you do not change product code." : "(agree it with the delivery lead before you change files)",
     skills: skillList(agent),
-    worktreeNote: agent.worktree ? " (you work in your own git worktree: never touch the base branch)" : "",
+    rosterCmd: rosterCmd(fleet, agent.id),
+    worktreeNote: agent.worktree ? " (you work in your own git worktree: never touch the base branch, and see \"Writing to the board from a worktree\" in the protocol)" : "",
   });
 }
 
@@ -77,6 +82,7 @@ export function writeBoard(fleet) {
       flow: fleet.board.flow.join(" → "),
       parked: fleet.board.parked.join(", "),
       base: fleet.repo.base,
+      rosterCmd: rosterCmd(fleet, "<your id>"),
     }),
   );
   writeIfMissing(
@@ -111,7 +117,7 @@ export function agentFileOf(fleet, agent) {
   const role = catalog.roles[agent.role];
   const extra = [
     ...(agent.readOnly ? ["- You read and write the board; you do not change product code."] : []),
-    ...(agent.worktree ? ["- Work in your own git worktree and branch."] : []),
+    ...(agent.worktree ? [`- Work in your own git worktree and branch. The board is not in it: read and write it only at \`${fleet.board.dir.replaceAll("\\", "/")}\`, and never commit board files.`] : []),
   ];
   const oneLine = (text) => String(text).replace(/\s+/g, " ").trim();
   // A description is one line: the specialty's first sentence, cut at a word and never mid-word.
