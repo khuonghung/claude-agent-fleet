@@ -5,6 +5,12 @@
 - Every member gets its own branch. `fleet launch-plan` named branches `<slug>-<id>` cut to 24 characters, so a slug of 24 characters or more (`kintsugi-backlog-sweep-3`) gave every member the same branch. The id is now never cut: when `<slug>-<id>` is too long, the slug's initials stand for it (`kbs3-dev-core`). `fleet spawn` names worktrees the same way.
 - `fleet init` no longer overwrites a fleet behind the lead's back. It refuses, unless given `--force`, to rewrite a fleet of the same slug whose members have started (its `fleet.json` would lose their session ids and times), and to make a new fleet current while another is still running (fleet commands and the dashboard would stop following it). `/agent-fleet:new` puts the choice to the user.
 - The dashboard comes back on the port it had. `fleet dashboard` tries the port in `dashboard.json` first, and `fleet stop` keeps it there, so a dashboard that died with the lead's session no longer moves from 4600 to 4603 when it is started again. The lead's recurring check runs `fleet dashboard` to bring it back.
+- `integrate-branches` closes the gaps a real run hit:
+  - Before the baseline, make sure the tests can run in the worktree (its `.env`, the services, variables a task runner such as turbo drops). The baseline records the exact commands and the passed, failed and skipped counts per suite.
+  - Every round compares those counts with the baseline: more tests skipped is red until explained and run, so a suite that skipped itself is no longer reported green. A test that times out is re-run alone once before the merge is called red.
+  - Merges carry a message that says what came in, `merge(<scope>): … ` with a `Tickets:` line, never git's default — no more rewriting history to rename them.
+  - Only the commits of `fixed` tickets are merged: a branch with unready work below the ready commit goes back to its owner to split.
+  - Checks are scoped: the touched packages and their dependents after each merge, the full suite once a round only when shared code changed, and always at the freeze.
 
 ## 0.5.0 — 2026-11-01
 
