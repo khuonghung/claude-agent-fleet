@@ -121,6 +121,23 @@ export function parseThread(name, text, stat, startAt) {
   };
 }
 
+const CHANNEL_LINE = /^\s*-\s*(\d{1,2}:\d{2})\s+([a-z][a-z0-9-]*)\s*(?:[·\-–—|]\s*([a-z-]+))?\s*:\s*(.+)$/i;
+const CHANNEL_KINDS = new Set(["heads-up", "ask", "answer", "fyi"]);
+
+/** The team channel (`CHANNEL.md`): its last posts, one a line (`- HH:MM <id> · <kind>: <text>`), oldest first. */
+export function parseChannel(text, stat, startAt) {
+  const posts = [];
+  for (const line of text.split(/\r?\n/)) {
+    const m = CHANNEL_LINE.exec(line);
+    if (!m) continue;
+    const kind = (m[3] ?? "").toLowerCase();
+    // As in tickets: a time after the file's last save is a guessed clock, read as that save.
+    const at = clockToIso(startAt, m[1]);
+    posts.push({ time: m[1].padStart(5, "0"), at: Date.parse(at) > stat.mtimeMs + 60_000 ? stat.mtime.toISOString() : at, who: m[2], kind: CHANNEL_KINDS.has(kind) ? kind : "post", text: m[4].trim().slice(0, 400) });
+  }
+  return { updated: stat.mtime.toISOString(), posts: posts.slice(-200) };
+}
+
 function parseRoster(text) {
   const roster = {};
   for (const line of text.split(/\r?\n/)) {
@@ -187,6 +204,15 @@ export async function readBoard(cfg) {
   }
   threads.sort((a, b) => b.updated.localeCompare(a.updated));
 
+  let channel = null;
+  try {
+    const file = path.join(dir, "CHANNEL.md");
+    const [text, stat] = await Promise.all([fs.readFile(file, "utf8"), fs.stat(file)]);
+    channel = parseChannel(text, stat, cfg.mission.startAt);
+  } catch {
+    // No channel (a board from before it): the dashboard leaves it out.
+  }
+
   const notices = (await readOr(path.join(dir, "NOTICES.md"))).trim();
   const boardMd = await readOr(path.join(dir, "BOARD.md"));
   const stack = /^.*Stack[^:\n]*:\s*(.*)$/im.exec(boardMd)?.[1]?.trim() ?? "";
@@ -201,6 +227,7 @@ export async function readBoard(cfg) {
   return {
     tickets,
     threads,
+    channel,
     roster: parseRoster(await readOr(path.join(dir, "ROSTER.md"))),
     reports,
     notices: notices.split(/\r?\n/).slice(0, 30).join("\n"),
@@ -216,7 +243,7 @@ export async function readBoardDoc(cfg, kind, name) {
     kind === "ticket" ? path.join(cfg.board.dir, "tickets", `${name}.md`)
     : kind === "report" ? path.join(cfg.board.dir, "reports", `${name}.md`)
     : kind === "thread" ? path.join(cfg.board.dir, "threads", `${name}.md`)
-    : kind === "board" && ["BOARD", "FINAL-REPORT", "README", "NOTICES", "ROSTER"].includes(name) ? path.join(cfg.board.dir, `${name}.md`)
+    : kind === "board" && ["BOARD", "FINAL-REPORT", "README", "NOTICES", "ROSTER", "CHANNEL"].includes(name) ? path.join(cfg.board.dir, `${name}.md`)
     : null;
   return file ? readOr(file, null) : null;
 }

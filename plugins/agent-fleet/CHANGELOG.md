@@ -12,6 +12,7 @@
 - Status moves are saved beside the history (`transitions.json`): a dashboard restart keeps each ticket's time in stage, and a move made while it was down is recorded at the ticket file's change. Up to 1000 moves are kept (was 300).
 - A Windows checkout (`core.autocrlf`) no longer breaks generated files: templates are read with LF line ends, so agents keep valid front matter and briefs and the protocol carry no stray CR.
 - Team channel: `CHANNEL.md` on the board for short news everyone needs now (heads-up, ask, answer, fyi), one line per post. `fleet say <member|owner> <kind> <text>` posts with the clock's time and one append per post, so posts at the same moment never erase each other. The protocol, briefs and agents say when to use it (and when a ticket, thread or direct message is the place instead), `team-communication` lists it, and members broadcast there instead of in `NOTICES.md`, which stays the lead's.
+- The dashboard server reads the team channel: its last 200 posts with their kinds, on the mission's clock (a guessed future time read as the file's save, as in tickets), and serves `CHANNEL.md` to the document drawer.
 
 ## 0.3.0 — 2026-11-01
 

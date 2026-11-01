@@ -280,3 +280,28 @@ test("server: status moves survive a restart, and a move made while it was down 
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("board: the team channel's posts, their kinds, and a guessed future time read as the file's save", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "fleet-board-"));
+  try {
+    const file = path.join(dir, "CHANNEL.md");
+    fs.writeFileSync(
+      file,
+      "# Team channel\n\nShort news for everyone, one line per post.\n\n- 10:05 dev-api · heads-up: touching `src/contracts/items.ts` until 10:30\n- 10:07 test-api · ask: who knows why api.test.ts flakes?\n- 10:09 dev-api · answer: test-api, it is the clock in DA-004\n- 10:10 lead: integration round at 10:30\n- 13:00 ba · fyi: a guessed clock\n",
+    );
+    const saved = new Date(2026, 10, 1, 10, 20);
+    fs.utimesSync(file, saved, saved);
+    const board = await readBoard({ board: { dir }, mission: { startAt: new Date(2026, 10, 1, 9, 30).toISOString() } });
+    assert.deepEqual(
+      board.channel.posts.map((p) => [p.time, p.who, p.kind]),
+      [["10:05", "dev-api", "heads-up"], ["10:07", "test-api", "ask"], ["10:09", "dev-api", "answer"], ["10:10", "lead", "post"], ["13:00", "ba", "fyi"]],
+    );
+    assert.equal(board.channel.posts[0].text, "touching `src/contracts/items.ts` until 10:30");
+    assert.equal(board.channel.posts[1].at, new Date(2026, 10, 1, 10, 7).toISOString());
+    assert.equal(board.channel.posts.at(-1).at, saved.toISOString());
+    fs.rmSync(file);
+    assert.equal((await readBoard({ board: { dir }, mission: { startAt: saved.toISOString() } })).channel, null, "a board from before the channel");
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
