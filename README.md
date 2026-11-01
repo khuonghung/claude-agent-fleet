@@ -1,6 +1,8 @@
 <div align="center">
 
-# Agent Fleet
+<img src="docs/media/logo.svg" alt="" width="96" height="96" />
+
+# Claude Agent Fleet
 
 **Run a whole team of Claude Code agents on one goal — and watch them work.**
 

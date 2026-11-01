@@ -86,7 +86,7 @@ h2, h3 { margin: 0; font-weight: 600; }
 
 /* Boot */
 .boot { min-height: 100vh; display: grid; place-content: center; justify-items: center; gap: 12px; color: var(--muted); }
-.boot .hd-mark { width: 48px; height: 48px; }
+.boot .hd-mark { width: 64px; height: 64px; }
 
 /* Header */
 .hd {
@@ -103,9 +103,11 @@ h2, h3 { margin: 0; font-weight: 600; }
   opacity: 0.7;
 }
 .hd-brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.hd-mark { width: 30px; height: 30px; flex: none; }
-.hd-mark circle { fill: var(--ink); }
-.hd-mark path { fill: none; stroke: var(--gold-2); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.hd-mark { width: 34px; height: 34px; flex: none; overflow: visible; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .18)); }
+.hd-mark .logo-star { transform-box: fill-box; transform-origin: center; animation: logo-twinkle 4s ease-in-out infinite; }
+.hd-mark .logo-eyes { transform-box: fill-box; transform-origin: 50% 55%; animation: m-blink 5s infinite 1.2s; }
+@keyframes logo-twinkle { 0%, 70%, 100% { transform: scale(1) rotate(0); opacity: 1; } 80% { transform: scale(1.35) rotate(20deg); opacity: .8; } }
+@media (prefers-reduced-motion: reduce) { .hd-mark * { animation: none !important; } }
 .hd-title { font-weight: 600; letter-spacing: 0.01em; }
 .hd-sub { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 

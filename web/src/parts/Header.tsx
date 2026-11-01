@@ -4,6 +4,7 @@ import { clock, duration, endOf, startOf } from "../lib";
 import type { Mission } from "../types";
 import { Dropdown } from "../ui/Controls";
 import { Icon } from "../ui/Icons";
+import { Logo } from "../ui/Logo";
 import type { Link } from "../useFleet";
 
 export type Theme = "system" | "dark" | "light";
@@ -34,10 +35,7 @@ export function Header({ mission, now, link, lastAt, theme, onTheme, onLang, onS
   return (
     <header className="hd">
       <div className="hd-brand">
-        <svg className="hd-mark" viewBox="0 0 32 32" aria-hidden="true">
-          <circle cx="16" cy="16" r="14" />
-          <path d="M7 19 L13 13 L17 17 L25 9" />
-        </svg>
+        <Logo className="hd-mark" />
         <div className="hd-names">
           <div className="hd-title">Agent Fleet</div>
           <div className="hd-sub">{mission.name}</div>

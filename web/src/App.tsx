@@ -17,6 +17,7 @@ import { Branches, Infra, Notices, Reports } from "./parts/Side";
 import { Threads } from "./parts/Threads";
 import { Slider } from "./ui/Controls";
 import { Palette, Toasts } from "./ui/Live";
+import { Logo } from "./ui/Logo";
 import type { AgentDef } from "./types";
 import { useFleet, useNow } from "./useFleet";
 
@@ -95,10 +96,7 @@ export function App() {
     return (
       <I18nContext.Provider value={i18n}>
         <div className="boot">
-          <svg className="hd-mark" viewBox="0 0 32 32" aria-hidden="true">
-            <circle cx="16" cy="16" r="14" />
-            <path d="M7 19 L13 13 L17 17 L25 9" />
-          </svg>
+          <Logo className="hd-mark" />
           <p>{link === "lost" ? t("app.lost") : t("app.connecting")}</p>
         </div>
       </I18nContext.Provider>
