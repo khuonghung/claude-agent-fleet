@@ -3,6 +3,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { sessionsOf } from "../lib/sessions.mjs";
 
 const RECENT = 60;
 const BUCKET_MIN = 5;
@@ -83,9 +84,13 @@ function emptyStats() {
   };
 }
 
-/** Follows the transcripts of the configured agents. */
-export function createTranscripts(cfg, { sessionNames }) {
-  const byAgent = new Map(); // agent id -> {stats, offset, partial, file}
+/**
+ * Follows the transcripts of the configured agents. A member may have several — a desktop session cleared to save
+ * tokens starts a new one — and its telemetry sums them, oldest first, so its live state is its newest. `fleetDir` is
+ * where the hook records each member's sessions (`sessions/<id>.jsonl`).
+ */
+export function createTranscripts(cfg, { sessionNames, fleetDir }) {
+  const byAgent = new Map(); // agent id -> {stats, files: [{file, offset, partial}]}
   // `cfg` is read at each use, not captured: the server updates it in place when fleet.json changes.
   const bucketOf = (iso) => {
     const minutes = Math.floor((Date.parse(iso) - Date.parse(cfg.mission.startAt)) / 60000);
@@ -227,25 +232,34 @@ export function createTranscripts(cfg, { sessionNames }) {
       }
     }
     const same = (a, b) => path.resolve(a).toLowerCase() === path.resolve(b).toLowerCase();
+    const recorded = fleetDir ? sessionsOf(fleetDir) : {};
     // A member taken out of the plan is no longer followed.
     for (const id of byAgent.keys()) if (!cfg.agents.some((a) => a.id === id)) byAgent.delete(id);
     for (const agent of cfg.agents) {
       const m = agent.match ?? {};
-      let best = null;
+      const mine = recorded[agent.id] ?? [];
+      const hits = [];
       for (const c of candidates) {
-        let hit = false;
-        if (m.transcript) hit = same(c.file, m.transcript);
+        let hit = mine.some((r) => (r.transcriptPath && same(c.file, r.transcriptPath)) || (r.sessionId && !c.subagent && c.sessionId === r.sessionId));
+        if (hit) {
+          // Recorded by the hook: this member's, whatever its title.
+        } else if (m.transcript) hit = same(c.file, m.transcript);
         else if (m.sessionId && c.sessionId === m.sessionId) hit = true;
         else if (c.subagent) hit = Boolean(m.description) && (c.description === m.description || c.description.startsWith(`${m.description} `));
         else if (m.title && !m.sessionId) {
           c.title ??= await titleOf(c.file, c.size);
           hit = c.title?.startsWith(m.title) ?? false;
         }
-        if (hit && (!best || c.mtime > best.mtime)) best = c;
+        if (hit) hits.push(c);
       }
+      if (hits.length === 0) continue;
+      hits.sort((a, b) => a.mtime - b.mtime);
       const cur = byAgent.get(agent.id);
-      if (best && cur?.file !== best.file) {
-        byAgent.set(agent.id, { file: best.file, offset: 0, partial: "", stats: { ...emptyStats(), file: best.file, sessionId: best.sessionId, kind: best.subagent ? "subagent" : "session" } });
+      const files = hits.map((c) => c.file);
+      // A transcript more (or less) than before: read them all again, oldest first, so the sums and the live state hold.
+      if (cur?.files.length !== files.length || cur.files.some((f) => !files.includes(f.file))) {
+        const best = hits[hits.length - 1];
+        byAgent.set(agent.id, { files: files.map((file) => ({ file, offset: 0, partial: "" })), stats: { ...emptyStats(), file: best.file, sessionId: best.sessionId, kind: best.subagent ? "subagent" : "session" } });
       }
     }
   }
@@ -278,7 +292,7 @@ export function createTranscripts(cfg, { sessionNames }) {
   /** Reads what each transcript gained since the last call; true when anything changed. */
   async function poll() {
     let changed = false;
-    for (const t of byAgent.values()) {
+    for (const t of [...byAgent.values()].flatMap((entry) => entry.files.map((f) => Object.assign(f, { stats: entry.stats })))) {
       let size;
       try {
         size = (await fs.stat(t.file)).size;

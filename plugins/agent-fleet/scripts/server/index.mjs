@@ -79,7 +79,7 @@ const sessionNames = (id) => {
   if (key.startsWith("uds:")) return "peer";
   return /^local_/.test(key) ? null : key.split(/\s+/)[0] || null;
 };
-const transcripts = createTranscripts(cfg, { sessionNames });
+const transcripts = createTranscripts(cfg, { sessionNames, fleetDir: path.dirname(cfgFile) });
 
 async function refreshBoard() {
   const board = await readBoard(cfg);
