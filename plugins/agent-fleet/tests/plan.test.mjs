@@ -329,6 +329,11 @@ test("fleet dashboard prints its URL on a line of its own, says when it was alre
     const json = run("--json");
     assert.equal(json.status, 0, json.stderr);
     assert.deepEqual(JSON.parse(json.stdout), { url: `http://localhost:${port}`, port, running: true, reused: true });
+    // Stopped (or killed with the session that started it), it comes back on the same port, with no --port given.
+    spawnSync(process.execPath, [cli, "stop", "--fleet", path.join(dir, ".fleet", "night-team")], { cwd: dir });
+    const back = spawnSync(process.execPath, [cli, "dashboard", "--json", "--fleet", path.join(dir, ".fleet", "night-team")], { cwd: dir, encoding: "utf8", timeout: 20_000 });
+    assert.equal(back.status, 0, back.stderr);
+    assert.equal(JSON.parse(back.stdout).port, port);
   } finally {
     spawnSync(process.execPath, [cli, "stop", "--fleet", path.join(dir, ".fleet", "night-team")], { cwd: dir });
     fs.rmSync(dir, { recursive: true, force: true });

@@ -321,7 +321,14 @@ switch (command) {
         ].join("\n"),
       );
     };
-    const wanted = Number(flag("port", fleet.port ?? 4600));
+    // A restarted dashboard comes back on the port it had, so links already shared keep working.
+    let saved;
+    try {
+      saved = JSON.parse(fs.readFileSync(stateFile, "utf8")).port;
+    } catch {
+      saved = undefined;
+    }
+    const wanted = Number(flag("port", saved ?? fleet.port ?? 4600));
     let port = wanted;
     let reused = false;
     for (let tries = 0; tries < 20 && (await answers(port)); tries++) {
@@ -349,14 +356,21 @@ switch (command) {
   case "stop": {
     const fleetFile = currentFleetFile();
     const stateFile = path.join(path.dirname(fleetFile), "dashboard.json");
+    let state;
     try {
-      const { pid } = JSON.parse(fs.readFileSync(stateFile, "utf8"));
-      process.kill(pid);
-      fs.rmSync(stateFile);
-      out(`dashboard ${pid} stopped`);
+      state = JSON.parse(fs.readFileSync(stateFile, "utf8"));
+    } catch {
+      state = {};
+    }
+    try {
+      if (state.pid === undefined) throw new Error("no pid");
+      process.kill(state.pid);
+      out(`dashboard ${state.pid} stopped`);
     } catch {
       out("no dashboard of this fleet is running");
     }
+    // The port stays recorded, so the next start comes back on it.
+    if (state.port !== undefined) fs.writeFileSync(stateFile, JSON.stringify({ port: state.port, url: state.url }, null, 2));
     break;
   }
 
