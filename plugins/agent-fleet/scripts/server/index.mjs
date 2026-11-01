@@ -153,6 +153,8 @@ async function reloadFleet() {
   for (const key of Object.keys(cfg)) delete cfg[key];
   Object.assign(cfg, next);
   Object.assign(state, planState());
+  // Every member of the new plan has its telemetry slot at once (empty until its transcript is found).
+  state.telemetry = transcripts.snapshot();
   if (boardMoved) {
     watchBoard();
     lastStatus.clear();
