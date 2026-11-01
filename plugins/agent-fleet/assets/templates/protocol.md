@@ -9,7 +9,7 @@ Board: `{{boardDir}}`. Dashboard: run `/agent-fleet:dashboard` (or open the URL 
 
 {{roster}}
 
-Message a teammate with `SendMessage` and `to` = their session id from `ROSTER.md` (a desktop session) or their name (a subagent). A message to a busy session waits until its turn ends, so **the board is the channel and a message is only the doorbell**: assignments live in the tickets and `BOARD.md`, discussions in `threads/`, short news for everyone in `CHANNEL.md`, and everyone re-reads `BOARD.md`, the last lines of `CHANNEL.md`, greps `{{boardDir}}/tickets/` and `{{boardDir}}/threads/` for their id between tasks. The `team-communication` skill has the rules.
+Message a teammate with `SendMessage` and `to` = their session id from `ROSTER.md` (a desktop session) or their name (a subagent). A message to a busy session waits until its turn ends, so **the board is the channel and a message is only the doorbell**: assignments live in the tickets and `BOARD.md`, discussions in `threads/`, short news for everyone in `CHANNEL.md`, a message for one member in their inbox (`{{sendCmd}}`; it waits in `inbox/<id>.md` until they acknowledge it with `fleet ack <id> <n>`, and each prompt they get shows it), and everyone re-reads `BOARD.md`, the last lines of `CHANNEL.md`, greps `{{boardDir}}/tickets/` and `{{boardDir}}/threads/` for their id between tasks. The `team-communication` skill has the rules.
 
 ## Working together
 
@@ -60,6 +60,7 @@ Rules: append posts at the end, never edit another member's post; after posting,
 | `ROSTER.md` | each member edits only their own row | session id, worktree, branch |
 | `BOARD.md`, `NOTICES.md` | the delivery lead (or the lead) | summary, assignments, notices |
 | `CHANNEL.md` | every member and the owner, one appended line at a time with `fleet say` | the team channel |
+| `inbox/<id>.md`, `inbox/<id>.read` | anyone appends messages with `fleet send`; the member acknowledges with `fleet ack` | that member's direct messages |
 | `tickets/<ID>.md` | see "Tickets" | one file per issue |
 | `threads/<topic>.md` | its members append posts; its owner the header | one discussion or shared piece of work |
 | `reports/<id>.md` | that member only | running notes and the end report |

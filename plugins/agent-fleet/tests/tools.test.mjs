@@ -231,3 +231,31 @@ test("integrate: fixed tickets become named merges; one stacked on unready work 
     { repo: { dir: ".", base: "main", integration: "nt-integration" } },
   );
 });
+
+test("inbox: a direct message waits until acknowledged; the member sees it on every prompt, fleet status counts it", async () => {
+  const { recordSession } = await import("../scripts/lib/sessions.mjs");
+  await withFleet(async ({ dir, fleetFile, boardDir, run }) => {
+    let r = run("send", "po", "dev-api,dev-web", "please", "take", "DA-004", "next");
+    assert.equal(r.status, 0, r.stderr);
+    assert.deepEqual(JSON.parse(r.stdout).sent, [{ to: "dev-api", n: 1 }, { to: "dev-web", n: 1 }]);
+    run("send", "lead", "dev-api", "standup at 15:00");
+    assert.match(run("send", "po", "nobody", "x").stderr, /No member nobody/);
+    assert.match(fs.readFileSync(path.join(boardDir, "inbox", "dev-api.md"), "utf8"), /^- #2 \d\d:\d\d lead: standup at 15:00$/m);
+    const status = JSON.parse(run("status", "--json").stdout);
+    assert.equal(status.inbox["dev-api"].unread, 2);
+    assert.equal(status.inbox["dev-web"].unread, 1);
+    // The hook shows a known member its unread lines on a prompt, with the command that acknowledges them.
+    recordSession(path.dirname(fleetFile), "dev-api", { sessionId: "s-api" });
+    const prompt = (session) => spawnSync(process.execPath, [hook, "prompt"], { input: JSON.stringify({ cwd: dir, session_id: session, prompt: "inbox #2" }), encoding: "utf8" }).stdout;
+    const shown = prompt("s-api");
+    assert.match(shown, /You have 2 unread message\(s\) in your fleet inbox:\n- #1 \d\d:\d\d po: please take DA-004 next\n- #2 \d\d:\d\d lead: standup at 15:00\nAct on them, then acknowledge: node ".*fleet\.mjs" ack dev-api 1 2 --fleet /);
+    assert.equal(prompt("s-stranger"), "", "a session that is no member gets nothing");
+    assert.equal(run("ack", "dev-api", "1").stdout.trim(), "acknowledged #1");
+    assert.match(run("inbox", "dev-api").stdout, /^#2 .* lead: standup at 15:00$/m);
+    assert.doesNotMatch(run("inbox", "dev-api").stdout, /#1 /);
+    assert.match(run("inbox", "dev-api", "--all").stdout, /^#1 .*\(read \d\d:\d\d\)$/m);
+    assert.equal(run("ack", "dev-api", "all").stdout.trim(), "acknowledged #2");
+    assert.equal(prompt("s-api"), "");
+    assert.equal(JSON.parse(run("status", "--json").stdout).inbox["dev-api"], undefined);
+  });
+});

@@ -13,11 +13,12 @@ Fleet members are separate Claude Code sessions (or subagents). None of them see
 |---|---|---|
 | hand over, assign or report on work | the **ticket** (`Owner`, `Status`, a `## Log` line) | the dashboard, the verifier and the final report read it |
 | discuss, ask a question across areas, decide something, coordinate a shared ticket | a **thread** `threads/<topic>.md` (see `discuss-and-decide`) | several members, a written record, a decision at the end |
-| get one member's attention to something already written | a **direct message**: the doorbell | it wakes an idle session and is read when a busy one finishes its turn |
+| tell one member (or a few) something that needs no thread: an ask, an answer, a heads-up for them only | their **inbox**: `fleet send <you> <to>[,<to>] '<text>'`, then the doorbell | it waits on the board until they acknowledge it (`fleet ack`), and every prompt they get shows it; a SendMessage alone can wait an hour behind a busy turn or be lost to a compaction |
+| get one member's attention to something already written | a **direct message** (SendMessage): the doorbell — "inbox #3", "posted in threads/x.md" | it wakes an idle session and is read when a busy one finishes its turn |
 | give everyone short news for the next minutes (touching a shared file, stack down, integration round soon, a quick question anyone may answer) | the **team channel**: `fleet say <you> <heads-up \| ask \| answer \| fyi> '<one line>'` | everyone reads its last lines between tasks; it rings no one |
 | tell everyone about something that changes their work (shared file changed, base moved, freeze) | the delivery lead (or the lead) writes `NOTICES.md` and messages those affected; anyone else posts a `heads-up` in the channel | a broadcast to everyone costs every member a turn |
 
-**A message never carries the only copy of anything.** Write the substance in the ticket or thread, then ring the doorbell pointing at it. If the recipient's context is compacted or the message lands mid-task, the board still has it.
+**A message never carries the only copy of anything.** Write the substance in the ticket, the thread or the recipient's inbox, then ring the doorbell pointing at it. Read your inbox when a prompt shows it (or `fleet inbox <you>`), act, and acknowledge with `fleet ack <you> <n>` — an unacknowledged line tells the lead you have not seen it. If the recipient's context is compacted or the message lands mid-task, the board still has it.
 
 ## Write a message that can be acted on cold
 

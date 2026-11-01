@@ -20,6 +20,9 @@
 //   fleet ticket set <ID> <status> --by <member> [--note …] [--fix …] [--owner …] [--verifier …] [--decision …] [--force]
 //                                     moves a ticket as the protocol allows (who, which step, what evidence) and logs it
 //   fleet ticket list [--status s,s] [--owner <member>] [--json]   the board's tickets, one a line
+//   fleet send <member> <to>[,<to>…|all] <text>  a direct message that waits in each recipient's inbox until acknowledged
+//   fleet inbox <member> [--all] [--json] a member's unread messages (or all of them)
+//   fleet ack <member> <n>… | all     marks inbox messages read
 //   fleet say <member> <kind> <text>  posts one line to the team channel (kind: heads-up, ask, answer, fyi)
 //   fleet dashboard [--port N] [--json] starts the dashboard for the current fleet (or says where it runs) and prints its URL
 //   fleet stop                        stops the dashboard
@@ -36,6 +39,7 @@ import { branchOf, CHANNEL_HEAD, hhmm, launchPlan, writeAgents, writeBoard } fro
 import { CARRY, carryTickets, clonePlan, renameIntegration } from "./lib/clone.mjs";
 import { doctor } from "./lib/doctor.mjs";
 import { formatPlan, integrationPlan } from "./lib/integrate.mjs";
+import { ack, messagesOf, send, unreadState } from "./lib/inbox.mjs";
 import { listTickets, moveTicket, STATUSES } from "./lib/tickets.mjs";
 import { estimateFleet, memberEstimate } from "./lib/estimate.mjs";
 import { addToPlan, budgetState, catalog, contextState, extendPlan, modelId, normalizePlan, PLUGIN_ROOT, PLUGIN_VERSION, readFleet, versionNote } from "./lib/plan.mjs";
@@ -393,6 +397,42 @@ switch (command) {
     break;
   }
 
+  case "send": {
+    // A direct message that waits in the recipient's inbox until acknowledged; the doorbell (SendMessage) stays the sender's.
+    const fleet = readFleet(currentFleetFile());
+    const [from, to, ...words] = args.filter((a, i) => a !== "--fleet" && args[i - 1] !== "--fleet");
+    const known = (id) => fleet.agents.some((a) => a.id === id);
+    if (from === undefined || to === undefined) fail("usage: fleet send <your id> <to>[,<to>…] <text>");
+    if (from !== "owner" && !known(from)) fail(`No member ${from}; members: ${fleet.agents.map((a) => a.id).join(", ")} (or owner)`);
+    const recipients = to === "all" ? fleet.agents.map((a) => a.id).filter((id) => id !== from) : to.split(",");
+    const unknown = recipients.filter((id) => !known(id));
+    if (unknown.length > 0) fail(`No member ${unknown.join(", ")}; members: ${fleet.agents.map((a) => a.id).join(", ")}`);
+    const text = words.join(" ").trim();
+    if (text === "") fail("send what? the text is empty");
+    const sent = recipients.map((id) => send(fleet.board.dir, { from, to: id, text }));
+    out({ sent: sent.map((s) => ({ to: s.to, n: s.n })), next: "Ring the doorbell: one SendMessage line to each recipient (\"inbox #<n>\"). The message waits in their inbox until they acknowledge it." });
+    break;
+  }
+
+  case "inbox": {
+    const fleet = readFleet(currentFleetFile());
+    const id = args.find((a, i) => !a.startsWith("--") && args[i - 1] !== "--fleet");
+    if (!fleet.agents.some((a) => a.id === id)) fail(`usage: fleet inbox <member> [--all] [--json]; members: ${fleet.agents.map((a) => a.id).join(", ")}`);
+    const messages = messagesOf(fleet.board.dir, id).filter((m) => args.includes("--all") || !m.read);
+    if (args.includes("--json")) out(messages);
+    else out(messages.map((m) => `#${m.n} ${m.time} ${m.from}: ${m.text}${m.read ? ` (read ${m.read})` : ""}`).join("\n") || (args.includes("--all") ? "no messages" : "no unread messages"));
+    break;
+  }
+
+  case "ack": {
+    const fleet = readFleet(currentFleetFile());
+    const [id, ...which] = args.filter((a, i) => a !== "--fleet" && args[i - 1] !== "--fleet");
+    if (!fleet.agents.some((a) => a.id === id) || which.length === 0) fail("usage: fleet ack <your id> <n>… | all");
+    const done = ack(fleet.board.dir, id, which);
+    out(done.length > 0 ? `acknowledged ${done.map((n) => `#${n}`).join(", ")}` : "nothing to acknowledge (already read, or no such message)");
+    break;
+  }
+
   case "integrate": {
     // Read-only, with or without --dry-run: the round's merge plan for the release manager.
     const fleet = readFleet(currentFleetFile());
@@ -578,13 +618,13 @@ switch (command) {
     const used = Object.values(telemetry).reduce((n, t) => n + (t?.outputTokens ?? 0), 0);
     const budget = budgetState(fleet.budget, used);
     const context = contextState(fleet, telemetry, { inProgress });
-    const status = { mission: fleet.mission.name, goal: fleet.mission.goal, minutesLeft: left, members: fleet.agents.length, tickets: tickets.length, statuses, budget, context };
+    const status = { mission: fleet.mission.name, goal: fleet.mission.goal, minutesLeft: left, members: fleet.agents.length, tickets: tickets.length, statuses, budget, context, inbox: unreadState(fleet) };
     const k = (n) => `${Math.round(n / 1000)}k`;
     const tokens = budget.state === "none" ? `${k(used)} output tokens (no limit)` : `${k(used)} / ${k(budget.limit)} output tokens (${Math.round(budget.share * 100)}%, ${budget.state}; at the limit: ${budget.onLimit})`;
     if (args.includes("--json")) out(status);
     else {
       const heavy = context.clear.map((id) => `${id} ${k(context.members.find((m) => m.id === id).tokens)}`);
-      out(`${status.mission}: ${left} min left · ${status.members} members · ${status.tickets} tickets · ${Object.entries(statuses).map(([key, v]) => `${key} ${v}`).join(", ") || "none yet"} · ${tokens}${heavy.length ? ` · to clear (idle, context over ${k(context.compactAt)}): ${heavy.join(", ")}` : ""}`);
+      out(`${status.mission}: ${left} min left · ${status.members} members · ${status.tickets} tickets · ${Object.entries(statuses).map(([key, v]) => `${key} ${v}`).join(", ") || "none yet"} · ${tokens}${heavy.length ? ` · to clear (idle, context over ${k(context.compactAt)}): ${heavy.join(", ")}` : ""}${Object.keys(status.inbox).length ? ` · unread: ${Object.entries(status.inbox).map(([id, s]) => `${id} ${s.unread} (oldest ${s.oldestMinutes} min)`).join(", ")}` : ""}`);
     }
     break;
   }

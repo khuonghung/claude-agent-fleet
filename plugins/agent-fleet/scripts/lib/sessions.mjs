@@ -6,6 +6,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { normStatus } from "../server/board.mjs";
+import { messagesOf } from "./inbox.mjs";
 
 export const markerOf = (slug, id) => `Fleet member: ${slug}/${id}`;
 
@@ -84,6 +85,7 @@ export function resumeNote(fleet, id, { reason = "cleared" } = {}) {
   const agent = fleet.agents.find((a) => a.id === id);
   if (agent === undefined) throw new Error(`No member ${id}`);
   const board = fleet.board.dir.replaceAll("\\", "/");
+  const unread = messagesOf(fleet.board.dir, id).filter((m) => !m.read).length;
   const tickets = openTicketsOf(fleet.board.dir, id).sort((a, b) => (b.status === "in-progress") - (a.status === "in-progress"));
   const end = new Date(agent.window?.to ?? fleet.mission.endAt);
   const hhmm = `${String(end.getHours()).padStart(2, "0")}:${String(end.getMinutes()).padStart(2, "0")}`;
@@ -95,6 +97,7 @@ export function resumeNote(fleet, id, { reason = "cleared" } = {}) {
     `1. Re-read your brief \`${board}/briefs/${id}.md\` and the protocol \`${board}/README.md\`.`,
     `2. Your open tickets: ${tickets.length ? tickets.map((t) => `${t.id} (${t.status}, ${t.part})`).join(", ") : "none"}. ${tickets.some((t) => t.status === "in-progress") ? "Pick the one in progress back up from its Log." : "Take the next one assigned to you."}`,
     `3. Catch up with the team: \`${board}/BOARD.md\`, \`tail -n 30 ${board}/CHANNEL.md\`, \`grep -l ${id} ${board}/threads/*.md\`.`,
+    ...(unread > 0 ? [`4. Your inbox has ${unread} unread message(s): \`${board}/inbox/${id}.md\` — read them with the fleet CLI's \`inbox ${id}\` and acknowledge each with \`ack ${id} <n>\` once acted on.`] : []),
     "",
     `Keep working until ${hhmm}, as your brief says.`,
     "",

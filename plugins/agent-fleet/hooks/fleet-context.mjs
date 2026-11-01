@@ -9,9 +9,12 @@
 //                  fleet's lead (.fleet/lead.json: its session id and transcript), so the dashboard follows it too.
 //                  When the prompt carries a member's marker (a brief, a resume note), records the session as that
 //                  member's (.fleet/<slug>/sessions/<id>.jsonl), so a member cleared to save tokens is still followed.
+//                  A member's prompt also gets its unread inbox messages, until it acknowledges them.
 
 import fs from "node:fs";
 import path from "node:path";
+import { cli } from "../scripts/lib/board-init.mjs";
+import { unreadNote } from "../scripts/lib/inbox.mjs";
 import { versionNote } from "../scripts/lib/plan.mjs";
 import { memberOfPrompt, memberOfSession, recordSession, resumeNote } from "../scripts/lib/sessions.mjs";
 
@@ -46,6 +49,18 @@ try {
     const home = member && fleetHome(cwd);
     if (home && input.session_id && fs.existsSync(path.join(home, member.slug, "fleet.json"))) {
       recordSession(path.join(home, member.slug), member.id, { sessionId: input.session_id, transcriptPath: input.transcript_path });
+    }
+    // A member's unread inbox comes with every prompt it gets (a doorbell, the owner's words), until it acknowledges it.
+    const fleetHomeDir = fleetHome(cwd);
+    const slug = fleetHomeDir && fs.existsSync(path.join(fleetHomeDir, "current")) ? fs.readFileSync(path.join(fleetHomeDir, "current"), "utf8").trim() : undefined;
+    if (slug && input.session_id) {
+      const fleetDir = path.join(fleetHomeDir, slug);
+      const fleet = JSON.parse(fs.readFileSync(path.join(fleetDir, "fleet.json"), "utf8"));
+      const id = member?.slug === slug ? member.id : memberOfSession(fleet, fleetDir, input.session_id);
+      if (id !== undefined) {
+        const note = unreadNote(fleet, id, (numbers) => cli(fleet, `ack ${id} ${numbers}`));
+        if (note) process.stdout.write(note);
+      }
     }
   } else if (mode === "session-start") {
     const home = fleetHome(cwd);

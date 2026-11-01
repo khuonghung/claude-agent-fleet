@@ -33,11 +33,13 @@ const skillList = (agent) =>
   (agent.skills ?? []).length === 0 ? "(none)" : agent.skills.map((name) => `- \`agent-fleet:${name}\` — ${(skills[name] ?? "").split(/(?<=\.)\s/).slice(-1)[0]}`).join("\n");
 
 /** A fleet CLI command that finds this fleet's board from any folder (a worktree too). */
-const cli = (fleet, args) => `node "${path.join(PLUGIN_ROOT, "scripts", "fleet.mjs").replaceAll("\\", "/")}" ${args} --fleet "${path.dirname(fleet.board.dir).replaceAll("\\", "/")}"`;
+export const cli = (fleet, args) => `node "${path.join(PLUGIN_ROOT, "scripts", "fleet.mjs").replaceAll("\\", "/")}" ${args} --fleet "${path.dirname(fleet.board.dir).replaceAll("\\", "/")}"`;
 /** The shell command that records a member's worktree and branch in ROSTER.md, run as is. */
 const rosterCmd = (fleet, id) => cli(fleet, `roster ${id} worktree="$(git rev-parse --show-toplevel)" branch="$(git branch --show-current)"`);
 /** The shell command that posts one line to the team channel; the kind is heads-up, ask, answer or fyi. */
 const sayCmd = (fleet, id) => cli(fleet, `say ${id} fyi '<one line>'`);
+/** The shell command that sends a direct message to a member's inbox. */
+const sendCmd = (fleet, id) => cli(fleet, `send ${id} <to> '<text>'`);
 /** The shell command that moves one ticket's status, checked against the protocol, with its Log line. */
 const ticketCmd = (fleet, id) => cli(fleet, `ticket set <ID> <status> --by ${id} --note '<evidence>'`);
 
@@ -86,7 +88,7 @@ function addRosterRows(file, agents) {
 export function writeBoard(fleet, { makeCurrent = true } = {}) {
   const dir = fleet.board.dir;
   const fleetDir = path.dirname(dir);
-  for (const sub of ["tickets", "threads", "reports", "briefs"]) fs.mkdirSync(path.join(dir, sub), { recursive: true });
+  for (const sub of ["tickets", "threads", "reports", "briefs", "inbox"]) fs.mkdirSync(path.join(dir, sub), { recursive: true });
   const pre = prefixes(fleet.agents);
   const roster = [
     "| Member | Role | Squad | Reports to | Model · effort | Owns | Ticket prefix |",
@@ -113,6 +115,7 @@ export function writeBoard(fleet, { makeCurrent = true } = {}) {
       rosterCmd: rosterCmd(fleet, "<your id>"),
       sayCmd: sayCmd(fleet, "<your id>"),
       ticketCmd: ticketCmd(fleet, "<your id>"),
+      sendCmd: sendCmd(fleet, "<your id>"),
       contextRule: fleet.context?.compactAt
         ? `\n8. The board is your memory, not your context. Every model call re-reads a member's whole context, so it is kept under ${Math.round(fleet.context.compactAt / 1000)}k tokens: subagents and headless members compact on their own, and the lead clears a desktop member that sits idle above it. When you finish a ticket, and before you end a turn, its Log says where you are and what comes next, so nothing is lost. After a compaction or a clear you get a note that begins \`Fleet member: <fleet>/<your id>\`; re-read your brief and your open tickets, then carry on.`
         : "",
