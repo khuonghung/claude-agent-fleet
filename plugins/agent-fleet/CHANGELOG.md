@@ -13,6 +13,7 @@
   - Checks are scoped: the touched packages and their dependents after each merge, the full suite once a round only when shared code changed, and always at the freeze.
 - Skipped is not passed: `verify-before-done` asks for the exact command with its passed, failed and skipped counts, and treats tests that prove the claim being skipped as unproven. `review-change` runs the ticket's tests and repro instead of reading the diff alone, and the product owner (`triage-tickets`) re-runs the verifier's main command before accepting.
 - No more stacked commits: the protocol (rule 2) and the developer's duties say each ticket's commit must merge on its own — a ticket is never built on a commit whose ticket is not yet `integrated`; the next one starts on a new branch from the integration branch instead. Nobody works on a `deferred`, `wont-fix` or `duplicate` ticket.
+- The planner and `/agent-fleet:new` propose a release manager on Sonnet + medium whenever more than one builder commits, small teams included, instead of leaving integration to the lead.
 
 ## 0.5.0 — 2026-11-01
 

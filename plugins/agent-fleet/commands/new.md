@@ -86,7 +86,7 @@ Write the plan to `.fleet/plan.json` in this shape (fields you leave out get the
 }
 ```
 
-`repo.integration` is the branch the builders' work is merged into, which the dashboard counts integrated commits against. Leave it out when the plan has a `release-manager`: their worktree branch is the integration branch and the dashboard reads it from the roster. Otherwise name the branch the lead will create (e.g. `<code>-integration`) and use that name when you create it; if the lead later picks another, write it into `fleet.json` (the dashboard re-reads it).
+`repo.integration` is the branch the builders' work is merged into, which the dashboard counts integrated commits against. Leave it out when the plan has a `release-manager`: their worktree branch is the integration branch and the dashboard reads it from the roster. A plan with more than one builder and no release manager leaves integration to the lead, which stalls the team (each round takes the lead 10–20 minutes): propose a `release-manager` on Claude Sonnet 5.5 + `medium` instead, and only without one name the branch the lead will create (e.g. `<code>-integration`) and use that name when you create it; if the lead later picks another, write it into `fleet.json` (the dashboard re-reads it).
 
 Leave `budget` out (or `{}`) when the user chose no limit. `context.compactAt` (default 100000; 100000 to 1000000, or 0 for off) is the context size members are kept under to save tokens: subagents and headless members compact there, the lead clears idle desktop members past it. Leave it out unless the user asks. Leave `phases` out to get the defaults, or give `{ "name", "from", "to" }` with ISO times. A custom role needs `title`, `squad` and `duties`.
 
