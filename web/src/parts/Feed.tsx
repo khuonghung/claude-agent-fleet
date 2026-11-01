@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useI18n } from "../i18n";
 import { agentById, agentIn, clock, statusLabel } from "../lib";
 import type { AgentDef, FleetState } from "../types";
-import { Slider } from "../ui/Controls";
+import { Fold, Slider } from "../ui/Controls";
 import { Icon } from "../ui/Icons";
 import { Avatar } from "./Fleet";
 
@@ -64,11 +64,13 @@ export function Feed({ s, onTicket, onAgent }: { s: FleetState; onTicket: (id: s
   const shown = items.filter((i) => (filter === "all" || i.kind === filter) && (!who || i.agent?.id === who)).slice(0, 160);
 
   return (
-    <section className="feed" aria-label={t("feed.title")}>
-      <div className="sec-hd">
-        <h2>{t("feed.title")}</h2>
-        <Slider kind="seg" label={t("feed.title")} value={filter} onChange={setFilter} items={FILTERS.map((f) => ({ id: f.id, label: t(f.label) }))} />
-      </div>
+    <Fold
+      id="feed"
+      open
+      className="feed"
+      title={t("feed.title")}
+      actions={<Slider kind="seg" label={t("feed.title")} value={filter} onChange={setFilter} items={FILTERS.map((f) => ({ id: f.id, label: t(f.label) }))} />}
+    >
       <div className="feed-who">
         <button type="button" className={`chip${who === "" ? " is-on" : ""}`} onClick={() => setWho("")}>
           {t("feed.everyone")}
@@ -106,6 +108,6 @@ export function Feed({ s, onTicket, onAgent }: { s: FleetState; onTicket: (id: s
         ))}
         {shown.length === 0 && <li className="fi-empty">{t("feed.none")}</li>}
       </ol>
-    </section>
+    </Fold>
   );
 }

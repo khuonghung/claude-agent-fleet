@@ -135,17 +135,17 @@ export function App() {
                 <Kpis s={state} now={now} />
                 <div className="layout">
                   <div className="col-main">
-                    <ChartCard title={t("ch.burn")} note={t("ch.burnNote")}>
+                    <ChartCard id="overview-burn" open title={t("ch.burn")} note={t("ch.burnNote")}>
                       <BurnUp s={state} now={now} />
                     </ChartCard>
-                    <ChartCard title={t("ch.pulse")} note={t("ch.pulseNote")}>
+                    <ChartCard id="overview-pulse" title={t("ch.pulse")} note={t("ch.pulseNote")}>
                       <Pulse s={state} now={now} onAgent={onAgent} />
                     </ChartCard>
                     <div className="pair">
-                      <ChartCard title={t("ch.tokens")} note={t("ch.tokensNote")}>
+                      <ChartCard id="overview-tokens" title={t("ch.tokens")} note={t("ch.tokensNote")}>
                         <TokenBurn s={state} now={now} />
                       </ChartCard>
-                      <ChartCard title={t("ch.funnel")} note={t("ch.funnelNote")}>
+                      <ChartCard id="overview-funnel" title={t("ch.funnel")} note={t("ch.funnelNote")}>
                         <Funnel s={state} />
                       </ChartCard>
                     </div>
@@ -179,10 +179,10 @@ export function App() {
               <>
                 <Flow s={state} now={now} onTicket={onTicket} />
                 <div className="pair">
-                  <ChartCard title={t("ch.funnel")} note={t("ch.funnelNote")}>
+                  <ChartCard id="tickets-funnel" title={t("ch.funnel")} note={t("ch.funnelNote")}>
                     <Funnel s={state} />
                   </ChartCard>
-                  <ChartCard title={t("ch.burn")} note={t("ch.burnNote")}>
+                  <ChartCard id="tickets-burn" title={t("ch.burn")} note={t("ch.burnNote")}>
                     <BurnUp s={state} now={now} />
                   </ChartCard>
                 </div>
@@ -196,7 +196,7 @@ export function App() {
                   <IntegrationRound s={state} now={now} onTicket={onTicket} />
                   <Preflight s={state} now={now} />
                 </div>
-                <ChartCard title={t("cd.timeline")} note={t("cd.timelineNote")} wide>
+                <ChartCard id="commit-timeline" title={t("cd.timeline")} note={t("cd.timelineNote")} wide>
                   <CommitTimeline s={state} now={now} onAgent={onAgent} />
                 </ChartCard>
                 <div className="pair">

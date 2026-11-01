@@ -3,6 +3,7 @@ import { useI18n } from "../i18n";
 import { clock, compact, endOf, startOf, statusLabel } from "../lib";
 import type { FleetState } from "../types";
 import { Mascot } from "./Mascot";
+import { Fold } from "../ui/Controls";
 
 const BUCKET = 5 * 60_000;
 
@@ -44,15 +45,11 @@ function niceMax(v: number) {
   return Math.ceil(v / (step / 2)) * (step / 2);
 }
 
-export function ChartCard({ title, note, children, wide }: { title: string; note: string; children: ReactNode; wide?: boolean }) {
+export function ChartCard({ id, title, note, children, wide, open }: { id: string; title: string; note: string; children: ReactNode; wide?: boolean; open?: boolean }) {
   return (
-    <section className={`chart-card${wide ? " is-wide" : ""}`}>
-      <div className="chart-hd">
-        <h2>{title}</h2>
-        <p>{note}</p>
-      </div>
+    <Fold id={id} title={title} note={note} open={open} className={`chart-card${wide ? " is-wide" : ""}`}>
       {children}
-    </section>
+    </Fold>
   );
 }
 

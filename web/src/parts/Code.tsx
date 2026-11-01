@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useI18n } from "../i18n";
 import { agentById, ago, clock, compact, endOf, startOf, statusLabel } from "../lib";
 import type { AgentDef, Branch, FleetState } from "../types";
-import { Num } from "../ui/Controls";
+import { Fold, Num } from "../ui/Controls";
 import { Icon } from "../ui/Icons";
 import { spotlight } from "../ui/motion";
 import { Avatar } from "./Fleet";
@@ -90,16 +90,21 @@ export function IntegrationRound({ s, now, onTicket }: { s: FleetState; now: num
     </button>
   );
   return (
-    <section className="panel round" aria-label={t("cd.round")}>
-      <div className="sec-hd">
-        <h2>{t("cd.round")}</h2>
-        {p?.into && <span className="sec-note">{t("cd.roundNote", { branch: short(p.into), head: p.head ?? "", ago: ago(now, p.at) })}</span>}
-        {p?.fullSuite && (p.merges?.length ?? 0) > 0 && (
+    <Fold
+      id="round"
+      open
+      className="panel round"
+      title={t("cd.round")}
+      note={p?.into ? t("cd.roundNote", { branch: short(p.into), head: p.head ?? "", ago: ago(now, p.at) }) : undefined}
+      actions={
+        p?.fullSuite &&
+        (p.merges?.length ?? 0) > 0 && (
           <span className={`pill${p.fullSuite.needed ? " is-warn" : " is-ok"}`} title={p.fullSuite.needed ? t("cd.fullSuiteWhy", { list: p.fullSuite.because.join(", ") }) : ""}>
             {p.fullSuite.needed ? t("cd.fullSuite") : t("cd.scoped")}
           </span>
-        )}
-      </div>
+        )
+      }
+    >
       {!p && <p className="fi-empty">{t("cd.loading")}</p>}
       {p?.error && <p className="round-error">{t("cd.roundError", { why: p.error })}</p>}
       {p && !p.error && (
@@ -186,7 +191,7 @@ export function IntegrationRound({ s, now, onTicket }: { s: FleetState; now: num
           )}
         </>
       )}
-    </section>
+    </Fold>
   );
 }
 
@@ -197,12 +202,13 @@ export function Preflight({ s, now }: { s: FleetState; now: number }) {
   const checks = [...(d?.checks ?? [])].sort((a, b) => order[a.state] - order[b.state]);
   const counts = { fail: checks.filter((c) => c.state === "fail").length, warn: checks.filter((c) => c.state === "warn").length };
   return (
-    <section className="panel" aria-label={t("cd.preflight")}>
-      <div className="sec-hd">
-        <h2>{t("cd.preflight")}</h2>
-        {d && <span className="sec-note">{t("cd.preflightNote", { ago: ago(now, d.at) })}</span>}
-        {d?.checks && <span className={`pill${counts.fail ? " is-bad" : counts.warn ? " is-warn" : " is-ok"}`}>{counts.fail ? t("cd.fails", { n: counts.fail }) : counts.warn ? t("cd.warns", { n: counts.warn }) : t("cd.allGood")}</span>}
-      </div>
+    <Fold
+      id="preflight"
+      className="panel"
+      title={t("cd.preflight")}
+      note={d ? t("cd.preflightNote", { ago: ago(now, d.at) }) : undefined}
+      actions={d?.checks && <span className={`pill${counts.fail ? " is-bad" : counts.warn ? " is-warn" : " is-ok"}`}>{counts.fail ? t("cd.fails", { n: counts.fail }) : counts.warn ? t("cd.warns", { n: counts.warn }) : t("cd.allGood")}</span>}
+    >
       {!d && <p className="fi-empty">{t("cd.loading")}</p>}
       {d?.error && <p className="round-error">{d.error}</p>}
       <ul className="checks">
@@ -228,7 +234,7 @@ export function Preflight({ s, now }: { s: FleetState; now: number }) {
         ))}
         {s.probes.length === 0 && <span className="fi-empty">{t("sd.noProbes")}</span>}
       </div>
-    </section>
+    </Fold>
   );
 }
 
@@ -356,10 +362,7 @@ export function BranchList({ s, now, onTicket }: { s: FleetState; now: number; o
   const rows = memberBranches(s);
   const max = Math.max(1, ...rows.map((b) => own(b).length));
   return (
-    <section className="panel" aria-label={t("sd.branches")}>
-      <div className="sec-hd">
-        <h2>{t("sd.branches")}</h2>
-      </div>
+    <Fold id="branches" open className="panel" title={t("sd.branches")}>
       <div className={`base${g.baseUntouched ? " is-ok" : " is-bad"}`}>
         <span className="mono">{g.base}</span> @ <span className="mono">{g.baseHead}</span>
         <b>{g.baseUntouched ? t("sd.untouched") : t("sd.changed")}</b>
@@ -422,7 +425,7 @@ export function BranchList({ s, now, onTicket }: { s: FleetState; now: number; o
           );
         })}
       </ul>
-    </section>
+    </Fold>
   );
 }
 
@@ -450,11 +453,7 @@ export function Hotspots({ s, onAgent }: { s: FleetState; onAgent: (id: string) 
     .sort((a, b) => b.who.length - a.who.length || b.who.reduce((n, w) => n + w.files, 0) - a.who.reduce((n, w) => n + w.files, 0));
   const most = Math.max(1, ...list.flatMap((r) => r.who.map((w) => w.files)));
   return (
-    <section className="panel" aria-label={t("cd.hotspots")}>
-      <div className="sec-hd">
-        <h2>{t("cd.hotspots")}</h2>
-        <span className="sec-note">{t("cd.hotspotsNote")}</span>
-      </div>
+    <Fold id="hotspots" className="panel" title={t("cd.hotspots")} note={t("cd.hotspotsNote")}>
       {list.length === 0 && <p className="fi-empty">{t("cd.noChanges")}</p>}
       <ul className="hot-list">
         {(all ? list : list.slice(0, HOTSPOTS_SHOWN)).map((r) => {
@@ -495,6 +494,6 @@ export function Hotspots({ s, onAgent }: { s: FleetState; onAgent: (id: string) 
           {all ? t("cd.showFewer") : t("cd.showAll", { n: list.length })}
         </button>
       )}
-    </section>
+    </Fold>
   );
 }

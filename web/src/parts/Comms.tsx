@@ -1,4 +1,5 @@
 import { useI18n } from "../i18n";
+import { Fold } from "../ui/Controls";
 import { Mascot } from "./Mascot";
 import type { FleetState } from "../types";
 
@@ -12,13 +13,7 @@ export function Comms({ s }: { s: FleetState }) {
   const hub = [...agents].sort((a, b) => agents.reduce((n, x) => n + count(x.id, b.id), 0) - agents.reduce((n, x) => n + count(x.id, a.id), 0))[0];
 
   return (
-    <section className="panel" aria-label={t("cm.title")}>
-      <div className="sec-hd">
-        <h2>{t("cm.title")}</h2>
-        <span className="sec-note">
-          {t("cm.note", { n: total, name: hub?.name ?? "—" })}
-        </span>
-      </div>
+    <Fold id="comms" title={t("cm.title")} note={t("cm.note", { n: total, name: hub?.name ?? "—" })} className="panel">
       <div className="comms" style={{ gridTemplateColumns: `28px repeat(${agents.length}, minmax(0, 1fr))` }}>
         <span className="cm-corner" aria-hidden="true">
           {t("cm.axis")}
@@ -44,6 +39,6 @@ export function Comms({ s }: { s: FleetState }) {
           </div>
         ))}
       </div>
-    </section>
+    </Fold>
   );
 }

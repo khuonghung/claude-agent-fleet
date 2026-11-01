@@ -165,3 +165,46 @@ export function Num({ value, format = (n: number) => String(Math.round(n)) }: { 
   }, [value]);
   return <span className="num">{format(shown)}</span>;
 }
+
+/**
+ * A panel that folds to its title line (with a one-line summary beside it) and opens on a click. Reference panels
+ * start closed, a tab's working panels open (`open`); each viewer's choice is kept. Controls of the panel (`actions`)
+ * sit beside the title, shown while it is open.
+ */
+export function Fold({ id, title, note, actions, open: openFirst = false, className, children }: { id: string; title: ReactNode; note?: ReactNode; actions?: ReactNode; open?: boolean; className?: string; children: ReactNode }) {
+  const key = `fleet-fold-${id}`;
+  const [open, setOpen] = useState(() => {
+    try {
+      const kept = localStorage.getItem(key);
+      return kept === null ? openFirst : kept === "1";
+    } catch {
+      return openFirst;
+    }
+  });
+  const toggle = () =>
+    setOpen((was) => {
+      try {
+        localStorage.setItem(key, was ? "0" : "1");
+      } catch {
+        // No storage (a private window): the panel keeps its state for this visit.
+      }
+      return !was;
+    });
+  return (
+    <section className={`fold${open ? " is-open" : ""}${className ? ` ${className}` : ""}`}>
+      <div className="fold-bar">
+        <button type="button" className="fold-hd" aria-expanded={open} aria-controls={key} onClick={toggle}>
+          <h2>{title}</h2>
+          {note ? <span className="fold-note">{note}</span> : null}
+          <Icon name="chevron" className="fold-chev" />
+        </button>
+        {open && actions ? <span className="fold-actions">{actions}</span> : null}
+      </div>
+      {open && (
+        <div className="fold-body" id={key}>
+          {children}
+        </div>
+      )}
+    </section>
+  );
+}

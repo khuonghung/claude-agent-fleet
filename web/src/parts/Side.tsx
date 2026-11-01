@@ -5,20 +5,17 @@ import { agentById, ago } from "../lib";
 import type { FleetState } from "../types";
 import { Icon } from "../ui/Icons";
 import { Avatar } from "./Fleet";
+import { Fold } from "../ui/Controls";
 
 export function Notices({ s }: { s: FleetState }) {
   const { t } = useI18n();
   if (!s.board?.notices) return null;
   return (
-    <section className="panel notices" aria-label={t("sd.notices")}>
-      <div className="sec-hd">
-        <h2>{t("sd.notices")}</h2>
-        <span className="sec-note">NOTICES.md</span>
-      </div>
+    <Fold id="notices" className="panel notices" title={t("sd.notices")} note="NOTICES.md">
       <div className="md md-sm">
         <Markdown remarkPlugins={[remarkGfm]}>{s.board.notices}</Markdown>
       </div>
-    </section>
+    </Fold>
   );
 }
 
@@ -26,10 +23,7 @@ export function Reports({ s, now, onDoc }: { s: FleetState; now: number; onDoc: 
   const { t } = useI18n();
   const reports = s.board?.reports ?? [];
   return (
-    <section className="panel" aria-label={t("sd.reports")}>
-      <div className="sec-hd">
-        <h2>{t("sd.reports")}</h2>
-      </div>
+    <Fold id="reports" open className="panel" title={t("sd.reports")}>
       <ul className="rp-list">
         {reports.map((r) => {
           const a = agentById(s, r.name);
@@ -60,6 +54,6 @@ export function Reports({ s, now, onDoc }: { s: FleetState; now: number; onDoc: 
           {t("sd.roster")}
         </button>
       </div>
-    </section>
+    </Fold>
   );
 }

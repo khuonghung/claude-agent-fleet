@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { useI18n, type T } from "../i18n";
 import { agentById, ago, CLOSED, compact, cycleTime, dateTime, DONE, endOf, median, ownerOf, SEVERITY_RANK, span, startOf, statusLabel, verifierOf } from "../lib";
 import type { FleetState, Ticket } from "../types";
-import { SearchField, Slider } from "../ui/Controls";
+import { Fold, SearchField, Slider } from "../ui/Controls";
 import { Icon } from "../ui/Icons";
 import { Avatar } from "./Fleet";
 
@@ -219,11 +219,7 @@ export function MemberScores({ s, now, onAgent, onDoc }: { s: FleetState; now: n
   const ended = now > endOf(s.mission);
   const mostDone = Math.max(1, ...rows.map((r) => r.owned));
   return (
-    <section className="panel" aria-label={t("rp.members")}>
-      <div className="sec-hd">
-        <h2>{t("rp.members")}</h2>
-        <span className="sec-note">{t("rp.membersNote")}</span>
-      </div>
+    <Fold id="member-scores" className="panel" title={t("rp.members")} note={t("rp.membersNote")}>
       <div className="tbl-wrap">
         <table className="tbl">
           <thead>
@@ -287,7 +283,7 @@ export function MemberScores({ s, now, onAgent, onDoc }: { s: FleetState; now: n
           </tbody>
         </table>
       </div>
-    </section>
+    </Fold>
   );
 }
 
@@ -347,16 +343,20 @@ export function TicketTable({ s, now, onTicket }: { s: FleetState; now: number; 
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   };
   return (
-    <section className="panel" aria-label={t("rp.tickets")}>
-      <div className="sec-hd">
-        <h2>{t("rp.tickets")}</h2>
+    <Fold
+      id="ticket-table"
+      open
+      className="panel"
+      title={t("rp.tickets")}
+      actions={
         <span className="tbl-tools">
           <CopyChip text={() => ticketsMarkdown(t, rows, reopens)} label={t("rp.copyMd")} icon="list" />
           <button type="button" className="chip" onClick={download}>
             <Icon name="arrow" size={12} className="is-down" /> {t("rp.csv")}
           </button>
         </span>
-      </div>
+      }
+    >
       <div className="tbl-filters">
         <Slider kind="seg" label={t("rp.tickets")} value={group} onChange={setGroup} items={groups} />
         <SearchField value={query} onChange={setQuery} placeholder={t("rp.search")} />
@@ -396,7 +396,7 @@ export function TicketTable({ s, now, onTicket }: { s: FleetState; now: number; 
         </table>
         {rows.length === 0 && <p className="fi-empty">{t("rp.none")}</p>}
       </div>
-    </section>
+    </Fold>
   );
 }
 
@@ -409,10 +409,7 @@ export function Risks({ s, onTicket }: { s: FleetState; onTicket: (id: string) =
     { key: "parked", label: t("rp.parkedList"), tone: "muted", list: tickets.filter((x) => x.status === "deferred" || x.status === "wont-fix") },
   ].filter((g) => g.list.length > 0);
   return (
-    <section className="panel" aria-label={t("rp.risks")}>
-      <div className="sec-hd">
-        <h2>{t("rp.risks")}</h2>
-      </div>
+    <Fold id="risks" className="panel" title={t("rp.risks")}>
       {groups.length === 0 && <p className="fi-empty">{t("rp.noRisks")}</p>}
       {groups.map((g) => (
         <div key={g.key} className={`risk-group is-${g.tone}`}>
@@ -432,7 +429,7 @@ export function Risks({ s, onTicket }: { s: FleetState; onTicket: (id: string) =
           </ul>
         </div>
       ))}
-    </section>
+    </Fold>
   );
 }
 
@@ -440,10 +437,7 @@ export function Decisions({ s, now, onDoc }: { s: FleetState; now: number; onDoc
   const { t } = useI18n();
   const decided = (s.board?.threads ?? []).filter((x) => x.decision).sort((a, b) => b.updated.localeCompare(a.updated));
   return (
-    <section className="panel" aria-label={t("rp.decisions")}>
-      <div className="sec-hd">
-        <h2>{t("rp.decisions")}</h2>
-      </div>
+    <Fold id="decisions" className="panel" title={t("rp.decisions")}>
       {decided.length === 0 && <p className="fi-empty">{t("rp.noDecisions")}</p>}
       <ul className="dec-list">
         {decided.map((x) => (
@@ -458,6 +452,6 @@ export function Decisions({ s, now, onDoc }: { s: FleetState; now: number; onDoc
           </li>
         ))}
       </ul>
-    </section>
+    </Fold>
   );
 }

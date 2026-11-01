@@ -4,6 +4,7 @@ import { agentById, ago } from "../lib";
 import type { FleetState, Thread } from "../types";
 import { Icon } from "../ui/Icons";
 import { Avatar } from "./Fleet";
+import { Fold } from "../ui/Controls";
 
 /** Members named in an open thread who have not posted in it yet. */
 export const waitingOn = (th: Thread) => {
@@ -21,11 +22,7 @@ export function Threads({ s, now, onAgent, onDoc }: { s: FleetState; now: number
   const count = (status: Thread["status"]) => threads.filter((x) => x.status === status).length;
 
   return (
-    <section className="panel threads" aria-label={t("th.title")}>
-      <div className="sec-hd">
-        <h2>{t("th.title")}</h2>
-        <span className="sec-note">{t("th.note", { open: count("open"), decided: count("decided") + count("closed") })}</span>
-      </div>
+    <Fold id="threads" open className="panel threads" title={t("th.title")} note={t("th.note", { open: count("open"), decided: count("decided") + count("closed") })}>
       {threads.length === 0 && <p className="fi-empty">{t("th.none")}</p>}
       <ul className="th-list">
         {threads.map((th) => {
@@ -94,6 +91,6 @@ export function Threads({ s, now, onAgent, onDoc }: { s: FleetState; now: number
           );
         })}
       </ul>
-    </section>
+    </Fold>
   );
 }

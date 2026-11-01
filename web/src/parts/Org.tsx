@@ -1,10 +1,10 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { useI18n } from "../i18n";
-import { agentStatus, agentStatusLabel, compact, dateTime } from "../lib";
+import { agentStatus, agentStatusLabel, clock, compact, dateTime } from "../lib";
 import type { AgentDef, FleetState } from "../types";
 import { Icon } from "../ui/Icons";
 import { spotlight } from "../ui/motion";
-import { Slider } from "../ui/Controls";
+import { Fold, Slider } from "../ui/Controls";
 import { Fleet, ModelChip } from "./Fleet";
 import { Mascot } from "./Mascot";
 
@@ -99,11 +99,10 @@ export function MissionPlan({ s, now }: { s: FleetState; now: number }) {
     { icon: "coin", label: t("org.budget"), value: s.budget?.outputTokens ? `${compact(s.budget.outputTokens)} · ${t(`lim.${s.budget.onLimit ?? "warn"}` as Parameters<typeof t>[0])}` : t("org.noBudget") },
     { icon: "bolt", label: t("org.launch"), value: t(launchKey) === launchKey ? s.launch : t(launchKey) },
   ] as const;
+  const current = s.mission.phases.find((p) => now >= Date.parse(p.from) && now < Date.parse(p.to));
+  const note = `${clock(s.mission.startAt, locale)}–${clock(s.mission.endAt, locale)} · ${current?.name ?? (now >= Date.parse(s.mission.endAt) ? t("hd.over") : s.mission.phases[0]?.name ?? "")}`;
   return (
-    <section className="chart-card plan-card">
-      <div className="chart-hd">
-        <h2>{t("org.plan")}</h2>
-      </div>
+    <Fold id="plan" title={t("org.plan")} note={note} className="chart-card plan-card">
       <div className="plan-goal">
         <Icon name="spark" />
         <p title={s.mission.goal}>{s.mission.goal}</p>
@@ -135,7 +134,7 @@ export function MissionPlan({ s, now }: { s: FleetState; now: number }) {
           );
         })}
       </ol>
-    </section>
+    </Fold>
   );
 }
 

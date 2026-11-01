@@ -3,6 +3,7 @@ import { agentStatus, cheerOf, agentStatusLabel, ago, CLOSED, compact, endOf, la
 import type { FleetState } from "../types";
 import { Mascot } from "./Mascot";
 import { waitingOn } from "./Threads";
+import { Fold } from "../ui/Controls";
 
 /** A prefix every member name shares ("kt-"), left out on the stage where names are short. */
 function sharedPrefix(names: string[]): string {
@@ -98,11 +99,7 @@ export function Attention({ s, now, onTicket, onAgent }: { s: FleetState; now: n
   if (hot.length) alerts.push({ level: "info", text: t("at.high", { n: hot.length }), detail: hot.slice(0, 6).map((x) => x.id).join(", "), ticket: hot[0]!.id });
 
   return (
-    <section className="attention" aria-label={t("at.title")}>
-      <div className="chart-hd">
-        <h2>{t("at.title")}</h2>
-        <p>{alerts.length ? t("at.count", { n: alerts.length }) : t("at.none")}</p>
-      </div>
+    <Fold id="attention" open className="attention" title={t("at.title")} note={alerts.length ? t("at.count", { n: alerts.length }) : t("at.none")}>
       <ul>
         {alerts.slice(0, 12).map((a, i) => (
           <li key={i} className={`al al-${a.level}`}>
@@ -115,6 +112,6 @@ export function Attention({ s, now, onTicket, onAgent }: { s: FleetState; now: n
         ))}
         {alerts.length === 0 && <li className="al al-ok">{t("at.ok")}</li>}
       </ul>
-    </section>
+    </Fold>
   );
 }
