@@ -134,3 +134,42 @@ test("clone: the next round keeps the team, starts a fresh board and carries the
     assert.ok(fs.existsSync(path.join(boardDir, "tickets", "DA-002.md")), "the last round's board is left as it was");
   });
 });
+
+test("ticket set: one step at a time, by the member whose step it is, with the evidence it needs, and a Log line", async () => {
+  await withFleet(async ({ boardDir, run }) => {
+    const file = path.join(boardDir, "tickets", "TA-001.md");
+    fs.writeFileSync(file, "# TA-001: login fails\n\n- Status: new\n- Severity: high\n- Area: apps/api\n- Owner:\n- Verifier:\n- Decision:\n\n## Problem\nx\n\n## Acceptance criteria\n\n## Log\n- 10:00 test-api: filed\n");
+    const set = (...a) => run("ticket", "set", "TA-001", ...a);
+    const status = () => /^- Status: (.*)$/m.exec(fs.readFileSync(file, "utf8"))[1];
+    let r = set("fixed", "--by", "dev-api", "--note", "x");
+    assert.equal(r.status, 1);
+    assert.match(r.stderr, /new → fixed skips a step/);
+    r = set("triaged", "--by", "po", "--decision", "do now");
+    assert.match(r.stderr, /needs acceptance criteria/);
+    fs.writeFileSync(file, fs.readFileSync(file, "utf8").replace("## Acceptance criteria\n", "## Acceptance criteria\n- Given a user, when they log in, then 200\n"));
+    assert.equal(set("triaged", "--by", "dev-api", "--decision", "do now").status, 1, "triage is the product owner's");
+    assert.equal(set("triaged", "--by", "po", "--decision", "do now").status, 0);
+    assert.match(set("assigned", "--by", "po").stderr, /needs an owner and a verifier/);
+    assert.equal(set("assigned", "--by", "po", "--owner", "dev-api", "--verifier", "test-api").status, 0);
+    assert.match(set("in-progress", "--by", "dev-web").stderr, /dev-web may not set in-progress: that is its owner \(dev-api\) or crew/);
+    assert.equal(set("in-progress", "--by", "dev-api").status, 0);
+    assert.match(set("fixed", "--by", "dev-api", "--note", "pnpm test → 12 passed").stderr, /needs the branch and commit in --fix/);
+    assert.equal(set("fixed", "--by", "dev-api", "--fix", "nt-dev-api @ 3f2a1c9", "--note", "pnpm --filter api test → 12 passed, 0 failed, 0 skipped").status, 0);
+    assert.equal(set("integrated", "--by", "dev-api", "--note", "merged").status, 1, "integration is the release manager's");
+    assert.equal(set("integrated", "--by", "rm", "--note", "merge abc1234; api 214/0/3 (baseline 3)").status, 0);
+    assert.match(set("verified", "--by", "lead", "--note", "ok").stderr, /that is its verifier \(test-api\), never its owner or crew/);
+    assert.equal(set("verified", "--by", "test-api", "--note", "criterion 1: curl → 200").status, 0);
+    assert.equal(status(), "verified");
+    const text = fs.readFileSync(file, "utf8");
+    assert.match(text, /^- Owner: dev-api$/m);
+    assert.match(text, /^- Fix: nt-dev-api @ 3f2a1c9$/m);
+    assert.match(text, /^- \d\d:\d\d dev-api: fixed — pnpm --filter api test → 12 passed, 0 failed, 0 skipped$/m);
+    assert.match(text, /^- \d\d:\d\d test-api: verified — criterion 1: curl → 200\n$/m, "the Log line is the last line");
+    assert.equal(set("reopened", "--by", "dev-web", "--note", "x").status, 1);
+    assert.equal(set("reopened", "--by", "po", "--note", "criterion 1 fails on staging data").status, 0);
+    assert.equal(set("verified", "--by", "test-api", "--note", "x", "--force").status, 0, "the lead's escape hatch");
+    assert.match(fs.readFileSync(file, "utf8"), /test-api: verified — x \(forced\)/);
+    const list = JSON.parse(run("ticket", "list", "--owner", "dev-api", "--json").stdout);
+    assert.deepEqual(list.map((t) => [t.id, t.status]), [["TA-001", "verified"]]);
+  });
+});

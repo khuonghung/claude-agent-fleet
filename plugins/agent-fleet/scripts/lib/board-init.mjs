@@ -38,6 +38,8 @@ const cli = (fleet, args) => `node "${path.join(PLUGIN_ROOT, "scripts", "fleet.m
 const rosterCmd = (fleet, id) => cli(fleet, `roster ${id} worktree="$(git rev-parse --show-toplevel)" branch="$(git branch --show-current)"`);
 /** The shell command that posts one line to the team channel; the kind is heads-up, ask, answer or fyi. */
 const sayCmd = (fleet, id) => cli(fleet, `say ${id} fyi '<one line>'`);
+/** The shell command that moves one ticket's status, checked against the protocol, with its Log line. */
+const ticketCmd = (fleet, id) => cli(fleet, `ticket set <ID> <status> --by ${id} --note '<evidence>'`);
 
 /** The head of a new team channel; posts are appended below it by `fleet say`. */
 export const CHANNEL_HEAD = "# Team channel\n\nShort news for everyone, one line per post, newest at the bottom. Post with `fleet say` (see the protocol), never by editing this file.\n\n";
@@ -63,6 +65,7 @@ export function briefOf(fleet, agent) {
     skills: skillList(agent),
     rosterCmd: rosterCmd(fleet, agent.id),
     sayCmd: sayCmd(fleet, agent.id),
+    ticketCmd: ticketCmd(fleet, agent.id),
     worktreeNote: agent.worktree
       ? ` (you work in your own git worktree: never touch the base branch, and see "Writing to the board from a worktree" in the protocol). A worktree has none of the files git ignores: before you run tests, copy the env files the main checkout has into it (\`${cli(fleet, "doctor")}\` lists them under "env files"), or tests that need them skip themselves and still pass`
       : "",
@@ -109,6 +112,7 @@ export function writeBoard(fleet, { makeCurrent = true } = {}) {
       base: fleet.repo.base,
       rosterCmd: rosterCmd(fleet, "<your id>"),
       sayCmd: sayCmd(fleet, "<your id>"),
+      ticketCmd: ticketCmd(fleet, "<your id>"),
       contextRule: fleet.context?.compactAt
         ? `\n8. The board is your memory, not your context. Every model call re-reads a member's whole context, so it is kept under ${Math.round(fleet.context.compactAt / 1000)}k tokens: subagents and headless members compact on their own, and the lead clears a desktop member that sits idle above it. When you finish a ticket, and before you end a turn, its Log says where you are and what comes next, so nothing is lost. After a compaction or a clear you get a note that begins \`Fleet member: <fleet>/<your id>\`; re-read your brief and your open tickets, then carry on.`
         : "",

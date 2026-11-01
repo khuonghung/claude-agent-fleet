@@ -16,6 +16,9 @@
 //   fleet brief <member>              prints a member's brief
 //   fleet resume <member>             prints the note that restarts a member cleared to save tokens
 //   fleet roster <member> <key=value> records a member's session id, worktree or branch in ROSTER.md
+//   fleet ticket set <ID> <status> --by <member> [--note …] [--fix …] [--owner …] [--verifier …] [--decision …] [--force]
+//                                     moves a ticket as the protocol allows (who, which step, what evidence) and logs it
+//   fleet ticket list [--status s,s] [--owner <member>] [--json]   the board's tickets, one a line
 //   fleet say <member> <kind> <text>  posts one line to the team channel (kind: heads-up, ask, answer, fyi)
 //   fleet dashboard [--port N] [--json] starts the dashboard for the current fleet (or says where it runs) and prints its URL
 //   fleet stop                        stops the dashboard
@@ -31,6 +34,7 @@ import path from "node:path";
 import { branchOf, CHANNEL_HEAD, hhmm, launchPlan, writeAgents, writeBoard } from "./lib/board-init.mjs";
 import { CARRY, carryTickets, clonePlan, renameIntegration } from "./lib/clone.mjs";
 import { doctor } from "./lib/doctor.mjs";
+import { listTickets, moveTicket, STATUSES } from "./lib/tickets.mjs";
 import { estimateFleet, memberEstimate } from "./lib/estimate.mjs";
 import { addToPlan, budgetState, catalog, contextState, extendPlan, modelId, normalizePlan, PLUGIN_ROOT, PLUGIN_VERSION, readFleet, versionNote } from "./lib/plan.mjs";
 import { normStatus } from "./server/board.mjs";
@@ -347,6 +351,43 @@ switch (command) {
         `  total: expected ${k(estimate.total.expected)}, range ${k(estimate.total.low)}–${k(estimate.total.high)}; suggested budget ${k(estimate.suggestedBudget)}`,
       ].join("\n"),
     );
+    break;
+  }
+
+  case "ticket": {
+    const fleet = readFleet(currentFleetFile());
+    // The words that are not a flag or a flag's value: `ticket set <ID> <status>`, `ticket list`.
+    const valued = new Set(["--by", "--note", "--fix", "--owner", "--verifier", "--decision", "--fleet", "--status"]);
+    const [sub, id, to] = args.filter((a, i) => !a.startsWith("--") && !valued.has(args[i - 1]));
+    if (sub === "list") {
+      const status = flag("status");
+      const owner = flag("owner");
+      const list = listTickets(fleet.board.dir).filter((t) => (status === undefined || status.split(",").includes(t.status)) && (owner === undefined || t.owner.split(/[,\s]+/).includes(owner)));
+      if (args.includes("--json")) out(list);
+      else out(list.map((t) => `${t.id.padEnd(9)} ${t.status.padEnd(12)} ${(t.severity || "-").padEnd(9)} ${(t.owner || "-").padEnd(12)} ${t.title}`).join("\n") || "no tickets");
+      break;
+    }
+    if (sub !== "set" || id === undefined || to === undefined || flag("by") === undefined) {
+      fail(`usage: fleet ticket set <ID> <status> --by <your id> [--note "<evidence>"] [--fix "<branch> @ <sha>"] [--owner <id>] [--verifier <id>] [--decision "<why>"] [--force]\n       fleet ticket list [--status s,s] [--owner <id>] [--json]\nstatuses: ${STATUSES.join(", ")}`);
+    }
+    const file = path.join(fleet.board.dir, "tickets", `${id}.md`);
+    if (!/^[A-Za-z0-9._-]+$/.test(id) || !fs.existsSync(file)) fail(`No ticket ${id} on the board (${path.join(fleet.board.dir, "tickets")})`);
+    const by = flag("by");
+    const result = moveTicket(fleet, fs.readFileSync(file, "utf8").replace(/\r\n?/g, "\n"), {
+      to: normStatus(to),
+      by,
+      force: args.includes("--force"),
+      note: flag("note"),
+      fix: flag("fix"),
+      owner: flag("owner"),
+      verifier: flag("verifier"),
+      decision: flag("decision"),
+    });
+    if (result.problems.length > 0) fail([`${id} stays ${result.from}:`, ...result.problems.map((p) => `- ${p}`), "A move the protocol does not allow: ask the lead (it may pass --force)."].join("\n"));
+    // One ticket in progress per member: a second one is allowed, but said.
+    const busy = normStatus(to) === "in-progress" ? listTickets(fleet.board.dir).filter((t) => t.id !== id && t.status === "in-progress" && t.owner.split(/[,\s]+/).includes(by)).map((t) => t.id) : [];
+    fs.writeFileSync(file, result.text);
+    out({ ticket: id, from: result.from, to: normStatus(to), ...(busy.length > 0 ? { warning: `${by} has ${busy.join(", ")} in progress too: one at a time` } : {}) });
     break;
   }
 

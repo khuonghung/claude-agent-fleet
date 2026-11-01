@@ -103,7 +103,10 @@ What happens, where (`path:line`), how to reproduce, expected vs actual.
 
 Status flow: {{flow}}; also {{parked}}. Change a ticket with small edits, never rewrite a file someone else edits; anyone may append to `## Log`.
 
-The `Status:` line holds the status word and nothing else (`- Status: duplicate`, not `duplicate → DA-004`): the reason, the other ticket, the commit go in `Decision:`, `Fix:` or the Log. Each move is made by the member who did the step, with a Log line, the moment it happens — never skip a status, since the dashboard and the delivery lead read where work stands from it:
+The `Status:` line holds the status word and nothing else (`- Status: duplicate`, not `duplicate → DA-004`): the reason, the other ticket, the commit go in `Decision:`, `Fix:` or the Log. Each move is made by the member who did the step, with a Log line, the moment it happens — never skip a status, since the dashboard and the delivery lead read where work stands from it.
+
+**Move a status with the fleet CLI, never by editing the `- Status:` line**: `{{ticketCmd}}`. It refuses a move that skips a step, a move that is not yours (below) and a move without its evidence, sets `Owner`, `Verifier`, `Fix` or `Decision` when you pass them (`--owner`, `--verifier`, `--fix "<branch> @ <sha>"`, `--decision`), and writes the Log line with the clock's time. If it refuses a move you believe is right, ask the lead; only the lead passes `--force`. `fleet ticket list --owner <your id>` lists your tickets.
+
 
 | To | Set by | When |
 |---|---|---|
