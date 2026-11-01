@@ -7,7 +7,7 @@ import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { agentFileOf, branchOf, briefOf, hhmm, launchPlan, prefixes, writeAgents, writeBoard } from "../scripts/lib/board-init.mjs";
-import { addToPlan, codeOf, defaultPhases, normalizePlan, readFleet, slugOf, transcriptFolderOf } from "../scripts/lib/plan.mjs";
+import { addToPlan, codeOf, defaultPhases, extendPlan, normalizePlan, readFleet, slugOf, transcriptFolderOf } from "../scripts/lib/plan.mjs";
 
 const plan = (extra = {}) => ({
   mission: { name: "Night team", goal: "Fix what the QA found", hours: 4 },
@@ -129,6 +129,66 @@ test("fleet init refuses to rewrite a started fleet or to replace a running one,
     assert.equal(run("init", "other.json", "--force").status, 0);
     assert.equal(fs.readFileSync(path.join(dir, ".fleet", "current"), "utf8").trim(), "day-team");
     assert.ok(fs.existsSync(path.join(dir, ".fleet", "night-team", "board", "ROSTER.md")), "the other fleet's board stays");
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("extending a fleet grows the phase in progress, moves the later ones, and the windows that ended with it", () => {
+  const p = normalizePlan(plan(), { cwd: "/repo", now: new Date("2026-11-01T00:00:00Z") });
+  // test-api's window ends early, before the extension: it is kept.
+  p.agents.find((a) => a.id === "test-api").window = { from: p.mission.startAt, to: "2026-11-01T02:00:00.000Z" };
+  p.agents.find((a) => a.id === "dev-api").window = { from: "2026-11-01T01:00:00.000Z", to: p.mission.endAt };
+  const now = new Date("2026-11-01T01:30:00Z");
+  const { plan: next, was, moved, grown } = extendPlan(p, "2026-11-01T06:00:00Z", { now });
+  assert.equal(was, "2026-11-01T04:00:00.000Z");
+  assert.equal(next.mission.endAt, "2026-11-01T06:00:00.000Z");
+  assert.equal(grown, "Build & verify");
+  assert.deepEqual(
+    next.mission.phases.map((x) => [x.name, x.from.slice(11, 16), x.to.slice(11, 16)]),
+    [
+      ["Start-up", "00:00", "00:24"],
+      ["Build & verify", "00:24", "05:00"],
+      ["Code freeze", "05:00", "05:24"],
+      ["Reports", "05:24", "06:00"],
+    ],
+  );
+  assert.equal(next.agents.find((a) => a.id === "dev-api").window.to, "2026-11-01T06:00:00.000Z");
+  assert.equal(next.agents.find((a) => a.id === "test-api").window.to, "2026-11-01T02:00:00.000Z");
+  assert.deepEqual(moved, ["lead", "po", "dev-api"]);
+  assert.equal(p.mission.endAt, "2026-11-01T04:00:00.000Z", "the fleet given is not changed");
+  // In the start-up the work grows; in the freeze, the freeze; an earlier end or one in the past is refused.
+  assert.equal(extendPlan(p, "2026-11-01T05:00:00Z", { now: new Date("2026-11-01T00:10:00Z") }).grown, "Build & verify");
+  assert.equal(extendPlan(p, "2026-11-01T05:00:00Z", { now: new Date("2026-11-01T03:10:00Z") }).grown, "Code freeze");
+  assert.throws(() => extendPlan(p, "2026-11-01T03:00:00Z", { now }), /later end/);
+  assert.throws(() => extendPlan(p, "2026-11-01T05:00:00Z", { now: new Date("2026-11-01T05:30:00Z") }), /has passed/);
+});
+
+test("fleet extend moves the end, rewrites the briefs and README, keeps the tickets and tells the team; --dry-run changes nothing", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "fleet-"));
+  const cli = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "scripts", "fleet.mjs");
+  const run = (...args) => spawnSync(process.execPath, [cli, "extend", ...args], { cwd: dir, encoding: "utf8" });
+  try {
+    const { fleetFile, boardDir } = writeBoard(normalizePlan(plan(), { cwd: dir }));
+    fs.writeFileSync(path.join(boardDir, "tickets", "DA-001.md"), "# DA-001: x\n");
+    const brief = () => fs.readFileSync(path.join(boardDir, "briefs", "dev-api.md"), "utf8");
+    const before = { end: readFleet(fleetFile).mission.endAt, brief: brief() };
+    const dry = run("--hours", "2", "--dry-run");
+    assert.equal(dry.status, 0, dry.stderr);
+    const shown = JSON.parse(dry.stdout);
+    assert.equal(Date.parse(shown.endAt) - Date.parse(before.end), 2 * 3_600_000);
+    assert.ok(shown.tokens.after > shown.tokens.before);
+    assert.equal(readFleet(fleetFile).mission.endAt, before.end, "a dry run writes nothing");
+    const done = run("--hours", "2");
+    assert.equal(done.status, 0, done.stderr);
+    const after = readFleet(fleetFile);
+    assert.equal(after.mission.endAt, shown.endAt);
+    assert.equal(after.mission.phases.at(-1).to, shown.endAt);
+    assert.notEqual(brief(), before.brief, "the brief has the new end");
+    assert.ok(fs.existsSync(path.join(boardDir, "tickets", "DA-001.md")));
+    assert.match(fs.readFileSync(path.join(boardDir, "CHANNEL.md"), "utf8"), /lead · heads-up: The fleet now ends at \d\d:\d\d \(was \d\d:\d\d\)/);
+    assert.match(fs.readFileSync(path.join(boardDir, "NOTICES.md"), "utf8"), /lead: The fleet now ends at/);
+    assert.equal(run("--hours", "2", "--to", "18:00").status, 1, "one of --hours or --to");
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

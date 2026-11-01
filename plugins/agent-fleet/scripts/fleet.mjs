@@ -7,6 +7,7 @@
 //   fleet init <plan.json> [--force]  writes .fleet/<slug>/ (fleet.json, board, briefs, one agent per member) and makes it current;
 //                                     refuses to rewrite a started fleet or to replace a running one unless --force
 //   fleet add <member.json> [--dry-run] adds one member (or an array) to the running fleet; prints what to launch for it
+//   fleet extend --hours N | --to T [--dry-run] moves the fleet's end later: phases, windows, briefs, agents; tells the team
 //   fleet launch-plan                 what to start for each member (JSON), for /agent-fleet:launch
 //   fleet brief <member>              prints a member's brief
 //   fleet resume <member>             prints the note that restarts a member cleared to save tokens
@@ -25,7 +26,7 @@ import net from "node:net";
 import path from "node:path";
 import { branchOf, CHANNEL_HEAD, hhmm, launchPlan, writeAgents, writeBoard } from "./lib/board-init.mjs";
 import { estimateFleet, memberEstimate } from "./lib/estimate.mjs";
-import { addToPlan, budgetState, catalog, contextState, modelId, normalizePlan, PLUGIN_ROOT, readFleet } from "./lib/plan.mjs";
+import { addToPlan, budgetState, catalog, contextState, extendPlan, modelId, normalizePlan, PLUGIN_ROOT, readFleet } from "./lib/plan.mjs";
 import { normStatus } from "./server/board.mjs";
 import { recordSession, resumeNote } from "./lib/sessions.mjs";
 import { createTranscripts } from "./server/transcripts.mjs";
@@ -195,6 +196,50 @@ switch (command) {
     }
     const ids = new Set(added.map((a) => a.id));
     out({ added: [...ids], warnings, estimate, launch: launchPlan(plan).filter((entry) => ids.has(entry.id)) });
+    break;
+  }
+
+  case "extend": {
+    const fleetFile = currentFleetFile();
+    const fleet = readFleet(fleetFile);
+    const hours = flag("hours");
+    const until = flag("to");
+    if ((hours === undefined) === (until === undefined)) fail("usage: fleet extend --hours <N> | --to <ISO time or HH:MM> [--dry-run]");
+    const was = Date.parse(fleet.mission.endAt);
+    let to;
+    if (hours !== undefined) {
+      if (!(Number(hours) > 0 && Number(hours) <= 72)) fail("--hours must be between 0 and 72");
+      // An ended fleet gets its hours from now; a running one from its end.
+      to = new Date(Math.max(was, Date.now()) + Number(hours) * 3_600_000);
+    } else if (/^\d{1,2}:\d{2}$/.test(until)) {
+      // A clock time is the first one after the current end, on the local clock.
+      const [h, m] = until.split(":").map(Number);
+      to = new Date(was);
+      to.setHours(h, m, 0, 0);
+      if (to.getTime() <= was) to.setDate(to.getDate() + 1);
+    } else to = new Date(until);
+    let result;
+    try {
+      result = extendPlan(fleet, to.toISOString());
+    } catch (error) {
+      fail(error.message);
+    }
+    const { plan, moved, grown } = result;
+    const tokens = { before: estimateFleet(fleet).total.expected, after: estimateFleet(plan).total.expected, limit: plan.budget?.outputTokens };
+    const leadId = plan.agents.find((a) => a.launch === "self")?.id ?? "owner";
+    const phase = plan.mission.phases.find((p) => p.name === grown);
+    const news = `The fleet now ends at ${hhmm(new Date(plan.mission.endAt))} (was ${hhmm(new Date(was))})${phase ? `; ${phase.name} runs to ${hhmm(new Date(phase.to))}` : ""}. Your brief has the new times.`;
+    const report = { endAt: plan.mission.endAt, was: fleet.mission.endAt, phases: plan.mission.phases, moved, tokens, message: news };
+    if (args.includes("--dry-run")) {
+      out(report);
+      break;
+    }
+    // The README's times and timeline, every brief and agent: all regenerated from the plan; tickets and reports kept.
+    writeBoard(plan, { makeCurrent: false });
+    writeAgents(plan);
+    fs.appendFileSync(path.join(plan.board.dir, "NOTICES.md"), `- ${hhmm()} ${leadId}: ${news}\n`);
+    post(plan, leadId, "heads-up", news);
+    out(report);
     break;
   }
 

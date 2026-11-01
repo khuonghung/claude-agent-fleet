@@ -218,6 +218,41 @@ export function addToPlan(fleet, members, { now = new Date(), lead } = {}) {
   return { plan, added: plan.agents.filter((a) => ids.has(a.id)), warnings };
 }
 
+/**
+ * Moves a fleet's end to `to` (a later time): the phase in progress grows by the difference and the phases after it
+ * move with the end, so the freeze and the reports keep their length; before the start or during the start-up the
+ * longest phase (the work) grows, after the end the last one. Members whose window ended with the fleet work to the new end; a window that
+ * ended earlier is kept.
+ */
+export function extendPlan(fleet, to, { now = new Date() } = {}) {
+  const was = fleet.mission.endAt;
+  const end = new Date(to);
+  if (!Number.isFinite(end.getTime())) throw new Error(`not a time: ${to}`);
+  if (!(end.getTime() > Date.parse(was))) throw new Error(`the fleet ends at ${was} already: give a later end`);
+  if (!(end.getTime() > now.getTime())) throw new Error(`${end.toISOString()} has passed: give an end in the future`);
+  const delta = end.getTime() - Date.parse(was);
+  const plan = structuredClone(fleet);
+  const phases = plan.mission.phases ?? [];
+  const at = now.getTime();
+  const span = (p) => Date.parse(p.to) - Date.parse(p.from);
+  const longest = phases.reduce((best, p, i) => (span(p) > span(phases[best]) ? i : best), 0);
+  let grow = phases.findIndex((p) => Date.parse(p.from) <= at && at < Date.parse(p.to));
+  // The start-up is no place for the extra time: the work gets it, as it does before the start.
+  if (grow === 0 && phases.length > 1) grow = longest;
+  if (grow < 0 && phases.length > 0) grow = at < Date.parse(phases[0].from) ? longest : phases.length - 1;
+  const shift = (iso) => new Date(Date.parse(iso) + delta).toISOString();
+  plan.mission.phases = phases.map((p, i) => (i < grow ? p : i === grow ? { ...p, to: shift(p.to) } : { ...p, from: shift(p.from), to: shift(p.to) }));
+  plan.mission.endAt = end.toISOString();
+  const moved = [];
+  for (const agent of plan.agents) {
+    if (agent.window !== undefined && Date.parse(agent.window.to) === Date.parse(was)) {
+      agent.window = { ...agent.window, to: plan.mission.endAt };
+      moved.push(agent.id);
+    } else if (agent.window === undefined) moved.push(agent.id);
+  }
+  return { plan, was, moved, grown: phases[grow]?.name };
+}
+
 /** A model alias as the id a session is started with ("" for inherit). */
 export const modelId = (model) => catalog.models[model]?.id ?? model;
 
