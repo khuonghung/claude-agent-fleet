@@ -95,3 +95,42 @@ test("doctor: env files a worktree lacks, variables turbo drops, a dirty checkou
     assert.equal(JSON.parse(cli.stdout).ok, true);
   });
 });
+
+test("clone: the next round keeps the team, starts a fresh board and carries the open tickets over as new, under ids no member uses", async () => {
+  await withFleet(async ({ dir, fleetFile, boardDir, run }) => {
+    const ticket = (id, status) => fs.writeFileSync(path.join(boardDir, "tickets", `${id}.md`), `# ${id}: thing ${id}\n\n- Status: ${status}\n- Owner: dev-api\n- Verifier: test-api\n\n## Problem\nx\n\n## Log\n- 10:00 po: filed\n`);
+    ticket("DA-001", "verified");
+    ticket("DA-002", "deferred");
+    ticket("DA-003", "In progress");
+    ticket("DA-004", "wont-fix");
+    const source = readFleet(fleetFile);
+    source.agents.find((a) => a.id === "dev-api").match.sessionId = "s-old";
+    fs.writeFileSync(fleetFile, JSON.stringify(source));
+    const refused = run("clone", "--name", "Night team 2");
+    assert.equal(refused.status, 1, "the source still runs");
+    assert.match(refused.stderr, /"night-team" is still running/);
+    const dry = JSON.parse(run("clone", "--name", "Night team 2", "--hours", "2", "--dry-run").stdout);
+    assert.equal(dry.slug, "night-team-2");
+    assert.equal(Date.parse(dry.endAt) - Date.parse(dry.startAt), 2 * 3_600_000);
+    const done = run("clone", "--name", "Night team 2", "--hours", "2", "--force");
+    assert.equal(done.status, 0, done.stderr);
+    const result = JSON.parse(done.stdout);
+    assert.deepEqual(result.carried, [
+      { id: "CO-001", from: "DA-002", status: "deferred" },
+      { id: "CO-002", from: "DA-003", status: "in-progress" },
+    ]);
+    assert.equal(fs.readFileSync(path.join(dir, ".fleet", "current"), "utf8").trim(), "night-team-2");
+    const next = readFleet(path.join(dir, ".fleet", "night-team-2", "fleet.json"));
+    assert.deepEqual(next.agents.map((a) => a.id), source.agents.map((a) => a.id));
+    assert.equal(next.agents.find((a) => a.id === "dev-api").match.sessionId, undefined, "no session of the last round");
+    assert.equal(next.agents.find((a) => a.id === "dev-api").match.title, "NT2 · dev-api");
+    assert.deepEqual(next.mission.phases.map((p) => p.name), source.mission.phases.map((p) => p.name));
+    assert.equal(next.mission.phases.at(-1).to, next.mission.endAt);
+    const carried = fs.readFileSync(path.join(dir, ".fleet", "night-team-2", "board", "tickets", "CO-002.md"), "utf8");
+    assert.match(carried, /^# CO-002: thing DA-003$/m);
+    assert.match(carried, /^- Status: new$/m);
+    assert.match(carried, /^- Owner: dev-api$/m);
+    assert.match(carried, /carried over from night-team\/DA-003 \(was in-progress\); back to new for triage\.$/m);
+    assert.ok(fs.existsSync(path.join(boardDir, "tickets", "DA-002.md")), "the last round's board is left as it was");
+  });
+});

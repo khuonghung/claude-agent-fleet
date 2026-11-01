@@ -7,6 +7,8 @@
 //   fleet estimate [plan.json]        output tokens per member and in total, from measured rates, and a budget
 //   fleet init <plan.json> [--force]  writes .fleet/<slug>/ (fleet.json, board, briefs, one agent per member) and makes it current;
 //                                     refuses to rewrite a started fleet or to replace a running one unless --force
+//   fleet clone --name <name> [--hours N] [--goal <text>] [--carry s,s] [--from <dir>] [--dry-run]
+//                                     the next round: the same team, a fresh board, open tickets carried over as new
 //   fleet add <member.json> [--dry-run] adds one member (or an array) to the running fleet; prints what to launch for it
 //   fleet extend --hours N | --to T [--dry-run] moves the fleet's end later: phases, windows, briefs, agents; tells the team
 //   fleet doctor [--json]             checks before launch: node, plugin version, git, env files worktrees lack, turbo env, port
@@ -27,6 +29,7 @@ import http from "node:http";
 import net from "node:net";
 import path from "node:path";
 import { branchOf, CHANNEL_HEAD, hhmm, launchPlan, writeAgents, writeBoard } from "./lib/board-init.mjs";
+import { CARRY, carryTickets, clonePlan, renameIntegration } from "./lib/clone.mjs";
 import { doctor } from "./lib/doctor.mjs";
 import { estimateFleet, memberEstimate } from "./lib/estimate.mjs";
 import { addToPlan, budgetState, catalog, contextState, extendPlan, modelId, normalizePlan, PLUGIN_ROOT, PLUGIN_VERSION, readFleet, versionNote } from "./lib/plan.mjs";
@@ -127,6 +130,34 @@ function initConflicts(plan) {
   return problems;
 }
 
+/** Writes a checked plan as a fleet (board, briefs, agents) and makes it current; what `fleet init` prints. */
+async function initFleet(plan) {
+  // Never rewrite a fleet that has started, nor take `current` from one still running, without being told to.
+  if (!args.includes("--force")) {
+    const problems = initConflicts(plan);
+    if (problems.length > 0) fail([...problems, "Pass --force to go ahead anyway."].join("\n"));
+  }
+  // The base branch's commit now: the dashboard warns when it moves (nobody but the owner merges into it).
+  plan.repo.baseline ??= await new Promise((done) => {
+    const git = spawn("git", ["-C", plan.repo.dir, "rev-parse", "--short=8", plan.repo.base], { windowsHide: true });
+    let text = "";
+    git.stdout.on("data", (chunk) => (text += chunk));
+    git.on("close", () => done(text.trim() || undefined));
+    git.on("error", () => done(undefined));
+  });
+  const written = writeBoard(plan);
+  // One agent definition per member, specialised from the plan (role duties + specialty, area, model, effort, window).
+  const agents = writeAgents(plan);
+  // The fleet's working files stay out of git without touching the project's .gitignore.
+  const exclude = path.join(plan.repo.dir, ".git", "info", "exclude");
+  if (fs.existsSync(path.dirname(exclude))) {
+    const have = fs.existsSync(exclude) ? fs.readFileSync(exclude, "utf8").split(/\r?\n/).map((line) => line.trim()) : [];
+    const missing = [".fleet/", ".claude/agents/fleet-*"].filter((pattern) => !have.includes(pattern));
+    if (missing.length > 0) fs.appendFileSync(exclude, `\n# agent-fleet working files\n${missing.join("\n")}\n`);
+  }
+  return { ...written, agentsDir: agents.dir, installedAgents: agents.installed, slug: plan.mission.slug, members: plan.agents.length, startAt: plan.mission.startAt, endAt: plan.mission.endAt };
+}
+
 /** Whether the dashboard of the fleet `slug` answers on a port. Plain http with no kept-alive socket: fetch leaves one
  * open, and exiting with it crashes Node on Windows. */
 const isDashboardOf = (port, slug) =>
@@ -188,30 +219,30 @@ switch (command) {
       out(plan);
       break;
     }
-    // Never rewrite a fleet that has started, nor take `current` from one still running, without being told to.
-    if (!args.includes("--force")) {
-      const problems = initConflicts(plan);
-      if (problems.length > 0) fail([...problems, "Pass --force to go ahead anyway."].join("\n"));
+    out(await initFleet(plan));
+    break;
+  }
+
+  case "clone": {
+    // The next round: the current fleet (or --from <dir>) as the source, a new name, the open tickets carried over.
+    const source = readFleet(flag("from") === undefined ? currentFleetFile() : warnIfOlder(path.join(path.resolve(flag("from")), "fleet.json")));
+    const statuses = (flag("carry") ?? CARRY.join(",")).split(",").map((s) => s.trim()).filter(Boolean);
+    let plan;
+    try {
+      plan = renameIntegration(source, normalizePlan(clonePlan(source, { name: flag("name"), goal: flag("goal"), hours: flag("hours") }), { lead: leadOf() }));
+    } catch (error) {
+      fail(error.message);
     }
-    // The base branch's commit now: the dashboard warns when it moves (nobody but the owner merges into it).
-    plan.repo.baseline ??= await new Promise((done) => {
-      const git = spawn("git", ["-C", plan.repo.dir, "rev-parse", "--short=8", plan.repo.base], { windowsHide: true });
-      let text = "";
-      git.stdout.on("data", (chunk) => (text += chunk));
-      git.on("close", () => done(text.trim() || undefined));
-      git.on("error", () => done(undefined));
-    });
-    const written = writeBoard(plan);
-    // One agent definition per member, specialised from the plan (role duties + specialty, area, model, effort, window).
-    const agents = writeAgents(plan);
-    // The fleet's working files stay out of git without touching the project's .gitignore.
-    const exclude = path.join(plan.repo.dir, ".git", "info", "exclude");
-    if (fs.existsSync(path.dirname(exclude))) {
-      const have = fs.existsSync(exclude) ? fs.readFileSync(exclude, "utf8").split(/\r?\n/).map((line) => line.trim()) : [];
-      const missing = [".fleet/", ".claude/agents/fleet-*"].filter((pattern) => !have.includes(pattern));
-      if (missing.length > 0) fs.appendFileSync(exclude, `\n# agent-fleet working files\n${missing.join("\n")}\n`);
+    if (plan.mission.slug === source.mission.slug) fail(`the new fleet needs a name of its own: "${flag("name")}" gives the slug "${source.mission.slug}" again`);
+    if (args.includes("--dry-run")) {
+      out({ slug: plan.mission.slug, startAt: plan.mission.startAt, endAt: plan.mission.endAt, members: plan.agents.map((a) => a.id), integration: plan.repo.integration ?? null, carry: statuses });
+      break;
     }
-    out({ ...written, agentsDir: agents.dir, installedAgents: agents.installed, slug: plan.mission.slug, members: plan.agents.length, startAt: plan.mission.startAt, endAt: plan.mission.endAt });
+    const written = await initFleet(plan);
+    const leadId = plan.agents.find((a) => a.launch === "self")?.id ?? "lead";
+    const carried = carryTickets(source, plan, { statuses, by: leadId });
+    fs.appendFileSync(path.join(plan.board.dir, "NOTICES.md"), `- ${hhmm()} ${leadId}: cloned from "${source.mission.name}" (${source.mission.slug}); ${carried.length} open ticket(s) carried over as new.\n`);
+    out({ ...written, from: source.mission.slug, carried });
     break;
   }
 

@@ -7,6 +7,8 @@ You are planning an **agent fleet**: a team of Claude Code agents that work in p
 
 The fleet CLI is `node "${CLAUDE_PLUGIN_ROOT}/scripts/fleet.mjs"` (call it `fleet` below). Run commands from the root of the project the fleet works on.
 
+**Another round of a fleet that ran here before?** When `.fleet/` holds a fleet and the user wants the same team again ("sweep 4", "same team, next batch"), offer to clone it instead of planning from scratch: `fleet clone --name "<new name>" [--hours N] [--goal "<text>"] --dry-run` shows the new fleet; on a yes, run it without `--dry-run`. It keeps the members (roles, specialties, areas, models, efforts, reporting lines) and the budget, starts a fresh board from now, scales the phases to the new length, renames a named integration branch, and carries the last round's open tickets over as `new` under `CO-…` ids (`--carry` picks the statuses; by default new, triaged, assigned, in-progress, reopened, deferred). Then go to step 8 (dashboard) and offer `/agent-fleet:launch`. Change members afterwards with `/agent-fleet:add` or by editing the plan and running `fleet init --force` before launch.
+
 ## 1. Read what you can choose from
 
 Run `fleet catalog`: the roles (each with a default squad, model, effort, worktree and duties), the models — each alias with its exact model (`opus` = Claude Opus 5.5, `claude-opus-5-5`; `sonnet` = Claude Sonnet 5.5; `haiku` = Claude Haiku 5.5; `inherit` = the lead's own model) — the efforts (`low` … `max`) and team templates (`small`, `standard`, `review`). Always name models by their full name and id when you talk to the user, never by a bare alias.
