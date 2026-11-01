@@ -9,7 +9,7 @@
 //   fleet brief <member>              prints a member's brief
 //   fleet roster <member> <key=value> records a member's session id, worktree or branch in ROSTER.md
 //   fleet say <member> <kind> <text>  posts one line to the team channel (kind: heads-up, ask, answer, fyi)
-//   fleet dashboard [--port N]        starts the dashboard for the current fleet (or says where it runs)
+//   fleet dashboard [--port N] [--json] starts the dashboard for the current fleet (or says where it runs) and prints its URL
 //   fleet stop                        stops the dashboard
 //   fleet status [--json]             tickets, members, time left and output tokens against the limit
 //   fleet spawn <member>              starts a member as a headless `claude -p` process (launch: headless)
@@ -17,6 +17,7 @@
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
+import http from "node:http";
 import net from "node:net";
 import path from "node:path";
 import { CHANNEL_HEAD, launchPlan, writeAgents, writeBoard } from "./lib/board-init.mjs";
@@ -196,21 +197,51 @@ switch (command) {
     const fleet = readFleet(fleetFile);
     const stateFile = path.join(path.dirname(fleetFile), "dashboard.json");
     // The dashboard of this fleet may already run; another fleet's (or anything else) on the port means the next free one.
-    const ours = async (p) => {
-      try {
-        const state = await (await fetch(`http://127.0.0.1:${p}/api/state`, { signal: AbortSignal.timeout(1500) })).json();
-        return state?.mission?.slug === fleet.mission.slug;
-      } catch {
-        return false;
-      }
+    // Plain http with no kept-alive socket: fetch leaves one open, and exiting with it crashes Node on Windows.
+    const ours = (p) =>
+      new Promise((done) => {
+        const req = http.get({ host: "127.0.0.1", port: p, path: "/api/state", agent: false, timeout: 1500 }, (res) => {
+          let body = "";
+          res.setEncoding("utf8");
+          res.on("data", (chunk) => (body += chunk));
+          res.on("end", () => {
+            try {
+              done(JSON.parse(body)?.mission?.slug === fleet.mission.slug);
+            } catch {
+              done(false);
+            }
+          });
+        });
+        req.on("timeout", () => req.destroy());
+        req.on("error", () => done(false));
+      });
+    // The URL goes on a line of its own, nothing glued to it, so a terminal (or Claude's reply) makes it a link;
+    // `--json` keeps the machine form.
+    const report = (result) => {
+      if (args.includes("--json")) return out(result);
+      const stop = `node "${path.join(PLUGIN_ROOT, "scripts", "fleet.mjs").replaceAll("\\", "/")}" stop`;
+      out(
+        [
+          `Agent Fleet dashboard for "${fleet.mission.name}":`,
+          "",
+          `  ${result.url}`,
+          "",
+          result.reused ? "It was already running." : result.running ? `Started (pid ${result.pid}).` : `Started (pid ${result.pid}), but it does not answer yet: see ${path.join(path.dirname(fleetFile), "dashboard.log")}.`,
+          ...(result.port !== wanted ? [`Port ${wanted} was taken, so it runs on ${result.port}.`] : []),
+          `Stop it with: ${stop}`,
+        ].join("\n"),
+      );
     };
-    let port = Number(flag("port", fleet.port ?? 4600));
+    const wanted = Number(flag("port", fleet.port ?? 4600));
+    let port = wanted;
+    let reused = false;
     for (let tries = 0; tries < 20 && (await answers(port)); tries++) {
-      if (await ours(port)) {
-        out({ url: `http://localhost:${port}`, running: true, note: "this fleet's dashboard is already running" });
-        process.exit(0);
-      }
+      if ((reused = await ours(port))) break;
       port += 1;
+    }
+    if (reused) {
+      report({ url: `http://localhost:${port}`, port, running: true, reused: true });
+      break;
     }
     const log = fs.openSync(path.join(path.dirname(fleetFile), "dashboard.log"), "a");
     const child = spawn(process.execPath, [path.join(PLUGIN_ROOT, "scripts", "server", "index.mjs"), fleetFile], {
@@ -222,7 +253,7 @@ switch (command) {
     child.unref();
     for (let i = 0; i < 40 && !(await answers(port)); i++) await new Promise((r) => setTimeout(r, 150));
     fs.writeFileSync(stateFile, JSON.stringify({ pid: child.pid, port, url: `http://localhost:${port}`, startedAt: new Date().toISOString() }, null, 2));
-    out({ url: `http://localhost:${port}`, running: await answers(port), pid: child.pid });
+    report({ url: `http://localhost:${port}`, port, running: await answers(port), pid: child.pid, reused: false });
     break;
   }
 

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
+import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -263,6 +264,35 @@ test("team channel: init creates it, the protocol and briefs explain it, and fle
     const posts = fs.readFileSync(channel, "utf8").split("\n").filter((l) => / test-api · fyi: post \d$/.test(l));
     assert.deepEqual(posts.map((l) => l.at(-1)).sort(), ["0", "1", "2", "3", "4", "5", "6", "7"]);
   } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("fleet dashboard prints its URL on a line of its own, says when it was already running, and keeps --json", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "fleet-"));
+  const cli = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "scripts", "fleet.mjs");
+  const port = await new Promise((done) => {
+    const probe = net.createServer().listen(0, "127.0.0.1", () => {
+      const { port: p } = probe.address();
+      probe.close(() => done(p));
+    });
+  });
+  const run = (...extra) => spawnSync(process.execPath, [cli, "dashboard", "--port", String(port), "--fleet", path.join(dir, ".fleet", "night-team"), ...extra], { cwd: dir, encoding: "utf8", timeout: 20_000 });
+  try {
+    writeBoard(normalizePlan(plan(), { cwd: dir }));
+    const first = run();
+    assert.equal(first.status, 0, first.stderr);
+    assert.ok(first.stdout.split("\n").includes(`  http://localhost:${port}`), first.stdout);
+    assert.match(first.stdout, /^Started \(pid \d+\)\.$/m);
+    const again = run();
+    assert.equal(again.status, 0, again.stderr);
+    assert.match(again.stdout, /^It was already running\.$/m);
+    assert.ok(again.stdout.includes(`  http://localhost:${port}\n`));
+    const json = run("--json");
+    assert.equal(json.status, 0, json.stderr);
+    assert.deepEqual(JSON.parse(json.stdout), { url: `http://localhost:${port}`, port, running: true, reused: true });
+  } finally {
+    spawnSync(process.execPath, [cli, "stop", "--fleet", path.join(dir, ".fleet", "night-team")], { cwd: dir });
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });

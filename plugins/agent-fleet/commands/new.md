@@ -92,4 +92,4 @@ Run `fleet validate .fleet/plan.json`; fix every problem it lists. Then run `fle
 
 ## 8. Open the dashboard
 
-Run `fleet dashboard` and give the user the URL (open it in the browser pane when you have one). Then show a short summary — goal, members with model · effort, window, the token limit and what happens at it (or "no limit") — and ask whether to launch now with `/agent-fleet:launch`.
+Run `fleet dashboard` and give the user the URL as a link they can click, on a line of its own — `Dashboard: [http://localhost:4600](http://localhost:4600)` with the port it printed — never only the port number (open it in the browser pane when you have one). Then show a short summary — goal, members with model · effort, window, the token limit and what happens at it (or "no limit") — and ask whether to launch now with `/agent-fleet:launch`.
