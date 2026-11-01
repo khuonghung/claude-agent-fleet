@@ -182,7 +182,7 @@
         "eyes": "googly",
         "accessory": "none"
       },
-      "duties": "Fix and build in your area only, on your own branch: set the ticket to `in-progress` with a Log line when you start it, then one commit per ticket with a test, the checks of every package you touched green, the ticket set to `fixed` with branch and commit. Ask the owner of another area for changes there.",
+      "duties": "Fix and build in your area only, on your own branch: set the ticket to `in-progress` with a Log line when you start it, then one commit per ticket with a test, never stacked on a commit whose ticket is not yet integrated, the checks of every package you touched green, the ticket set to `fixed` with branch and commit. Ask the owner of another area for changes there.",
       "skills": [
         "plan-ticket",
         "investigate-bug",

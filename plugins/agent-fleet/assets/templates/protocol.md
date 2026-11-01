@@ -126,7 +126,7 @@ Log times are the local clock when you write the line: read it with `date +%H:%M
 ## Rules
 
 1. Never commit to `{{base}}`, never push, never open pull requests: the owner reviews and merges.
-2. Builders commit only on their own branch, one commit per ticket, with a test where tests exist, following the project's commit conventions and its CLAUDE.md / AGENTS.md.
+2. Builders commit only on their own branch, one commit per ticket, with a test where tests exist, following the project's commit conventions and its CLAUDE.md / AGENTS.md. Each commit must merge on its own: never build a ticket on top of a commit whose ticket is not yet `integrated`. When your branch holds such a commit, start the next ticket on a new branch from the integration branch (`git switch -c <your branch>-<ticket id> <integration branch>`) and name it in `Fix:`. Work only on tickets assigned to you: never on one that is `deferred`, `wont-fix` or `duplicate` — a deferred ticket waits until the product owner brings it back.
 3. Stay in your area (see Members). A change elsewhere: ask its owner.
 4. Only one member runs long-lived servers; kill processes by PID only, never by name.
 5. No secrets in tickets, reports or commits.
