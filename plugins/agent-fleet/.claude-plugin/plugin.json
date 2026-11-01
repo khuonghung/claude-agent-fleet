@@ -1,6 +1,6 @@
 {
   "name": "agent-fleet",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Plan, launch and watch a fleet of Claude Code agents: set the goal, the org chart, each member's specialty, model, effort and time window, then follow the work live on a multilingual dashboard (English, Tiếng Việt, 日本語, 한국어, 中文).",
   "author": {
     "name": "khuonghung",

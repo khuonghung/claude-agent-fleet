@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.7.0 — 2026-11-01
 
 - A redesigned header: a top bar with the brand and the mission's name, a quiet live dot and the clock with the time left, and compact search, language ("VI") and theme buttons; under it, the mission's phases across the whole width — each as long as it lasts, the done ones tinted, the current one outlined in gold and filled as far as it has gone. A short phase drops its times, then its name (its tooltip keeps both), so labels no longer run into each other on a narrow screen; on a phone the mission's name stays readable.
 - The dashboard is set in Geist and Geist Mono, bundled with it (no Google Fonts request; Latin, Vietnamese and Cyrillic, each loaded only when a page needs it). Mono is kept for what reads as code — ticket ids, commits, branches, paths, commands, the clock — and names, labels, badges and figures are in Geist, with tabular figures throughout. KPI numbers are firmer (500, not 300), nothing is smaller than 11px, and Japanese, Korean and Chinese each name their own system fonts after Geist, so shared characters take the right form and a line keeps one height.
