@@ -18,7 +18,9 @@ Before any claim:
 1. **Identify** the command that proves it — the acceptance criterion and what exercises it.
 2. **Run** it now, complete, on the code the claim is about (your commit; the integration branch for `integrated` and `verified`).
 3. **Read** the whole result: exit code, failures, skipped tests, errors printed above the summary.
-4. **Compare**: does the output show the claim? No → state the real status with the output. Yes → state the claim **with** the output.
+4. **Compare**: does the output show the claim? No → state the real status with the output. Yes → state the claim **with** the output: the exact command, and the passed, failed and skipped counts.
+
+**Skipped is not passed.** A suite that finds no database, no `.env` or no service often skips itself and still exits 0. Read the skipped count: if the tests that prove your claim were skipped, or more were skipped than the baseline (the release manager's, or your own first run), the claim is unproven — make them run (copy the `.env` into your worktree, start the service, pass the variable through the task runner) and run again.
 
 ```markdown
 - 14:32 dev-api: fixed on dev-api/fix @ 3f2a1c9 — `pnpm --filter api test` → 214 passed, 0 failed, 0 skipped; `pnpm --filter api typecheck` → 0 errors; repro from the ticket now returns 200 (output below)
@@ -28,7 +30,7 @@ Before any claim:
 
 | Claim | Needs | Not enough |
 |---|---|---|
-| tests pass | the test command's output: 0 failures | an earlier run; "should pass" |
+| tests pass | the test command's output: 0 failures, and the tests that matter not skipped | an earlier run; "should pass"; a green exit with the suite skipped |
 | the bug is fixed | the original repro now behaves as expected | the code changed |
 | the regression test works | it failed before the fix and passes after | it passes once |
 | types/lint clean | that tool's output: 0 errors | the build passing |

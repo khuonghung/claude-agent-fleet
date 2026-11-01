@@ -11,6 +11,7 @@
   - Merges carry a message that says what came in, `merge(<scope>): … ` with a `Tickets:` line, never git's default — no more rewriting history to rename them.
   - Only the commits of `fixed` tickets are merged: a branch with unready work below the ready commit goes back to its owner to split.
   - Checks are scoped: the touched packages and their dependents after each merge, the full suite once a round only when shared code changed, and always at the freeze.
+- Skipped is not passed: `verify-before-done` asks for the exact command with its passed, failed and skipped counts, and treats tests that prove the claim being skipped as unproven. `review-change` runs the ticket's tests and repro instead of reading the diff alone, and the product owner (`triage-tickets`) re-runs the verifier's main command before accepting.
 
 ## 0.5.0 — 2026-11-01
 

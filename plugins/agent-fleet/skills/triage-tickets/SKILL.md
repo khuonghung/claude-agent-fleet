@@ -34,4 +34,4 @@ At each phase change, and whenever less than a third of the window is left, re-c
 
 ## Accepting finished work
 
-When a ticket is `verified`, check it against its acceptance criteria once more (read the verifier's evidence; you do not need to re-run it). Accept with a Log line, or reopen with the criterion that is not met.
+When a ticket is `verified`, check it against its acceptance criteria once more: read the verifier's evidence, and run the command it names on the integration branch yourself — one command, the one that proves the main criterion. Evidence with tests skipped, or without counts, is not evidence: send it back to the verifier. Accept with a Log line that has your command and its counts, or reopen with the criterion that is not met.

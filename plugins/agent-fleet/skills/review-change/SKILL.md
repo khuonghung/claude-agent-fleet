@@ -13,6 +13,7 @@ A review looks for problems that would reach the owner: wrong behaviour, missing
 - An integrated merge: `git diff <base>...<integration branch>` limited to the merge's files.
 - Read the ticket, its acceptance criteria, its Plan and any thread first: you review **against what the change was meant to do**, and against decisions already made.
 - Read the whole function around each hunk, and the callers of anything whose behaviour changed.
+- **Run it.** Check out the commit (or the integration branch) and run the ticket's tests and its repro yourself; record the commands and their passed, failed and skipped counts in your review. A diff read alone misses a test that never ran. When you cannot run them, say so in the review: "not run: <why>".
 
 ## Dimensions
 
@@ -42,7 +43,7 @@ Rules: anything exploitable from outside is at least high; a slow hot path or a 
 
 - **A real problem** → its own ticket (see `write-ticket`): `path:line`, the failing scenario (input → wrong result), severity, the dimension; linked from the reviewed ticket's Log.
 - **A question** → a Log line (or a thread post) to the owner.
-- **Nothing found** → `reviewed <sha>: no findings (correctness, tests, security, performance, conventions, scope)`.
+- **Nothing found** → `reviewed <sha>: no findings (correctness, tests, security, performance, conventions, scope); ran <command> → <passed>/<failed>/<skipped>`.
 
 Say what is certain and what is a suspicion. Do not fix the code yourself outside your area — the owner fixes (see `respond-to-review`), you verify.
 
