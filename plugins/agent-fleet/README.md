@@ -57,7 +57,7 @@ The role catalog maps roles to skills (`skills` per role); a plan can override a
 
 A live control room (Server-Sent Events, no polling) in **English, Tiếng Việt, 日本語, 한국어 and 中文**, light and dark:
 
-- **Overview**: the mascot lineup (each member's mascot acts out its state: it hops while running a tool, looks around while thinking, sleeps when idle), KPIs with the token budget, ticket burn-up, the team pulse heatmap, output tokens per squad, the ticket funnel, *Needs attention* and the live feed.
+- **Overview**: the mascot lineup — a plush animal per role (a chick for the lead, a cat, a bear, an owl, a frog, a bunny, a ghost…), each acting out its member's state: it hops while running a tool, looks around while thinking, sleeps when idle; members who share a role get their own colour and a hair clip — KPIs with the token budget, ticket burn-up, the team pulse heatmap, output tokens per squad, the ticket funnel, *Needs attention* and the live feed.
 - **Org chart**: who reports to whom, the mission plan (goal, window, phases, budget, launch mode) and every member's planned model, effort and window beside what it runs — a member running another model than planned is flagged.
 - **Team**: one card per member (now doing, last words, sparkline, commits, tickets, tokens, model) and the who-messages-whom matrix.
 - **Tickets**, **Code & infra** (branches, integration, base-branch guard, service probes), **Reports**.
@@ -73,14 +73,15 @@ It reads only: each member's Claude Code transcript (sessions in `~/.claude/proj
 |---|---|
 | Plan schema, defaults, validation | `scripts/lib/plan.mjs`, `assets/role-catalog.json` |
 | Board, protocol and briefs | `scripts/lib/board-init.mjs`, `assets/templates/` |
-| CLI the commands run | `scripts/fleet.mjs` (`catalog`, `validate`, `estimate`, `init`, `launch-plan`, `brief`, `roster`, `dashboard`, `stop`, `status`, `spawn`) |
+| CLI the commands run | `scripts/fleet.mjs` (`catalog`, `validate`, `estimate`, `init`, `launch-plan`, `brief`, `resume`, `roster`, `dashboard`, `stop`, `status`, `spawn`) |
 | Dashboard server (Node, no dependencies) | `scripts/server/` |
 | Dashboard (built) | `assets/dashboard/`; its source is `web/` (React + Vite) at the repository root, outside the plugin |
 | Planner agent | `agents/fleet-planner.md` — proposes the org chart, areas, models and efforts |
 | Member agents | generated per fleet by `fleet init` into `.fleet/<mission>/agents/` from `assets/templates/agent.md` and the role catalog; installed as project agents `.claude/agents/fleet-<mission>-<id>.md` for subagent launches |
 | Skills | `skills/<name>/SKILL.md` — the team's playbooks, mapped to roles in the catalog |
 | Token estimate | `scripts/lib/estimate.mjs`, `assets/token-rates.json` — measured output tokens per active hour by model and squad, scaled by effort |
-| Hooks | `hooks/` — tells a member session where its board is; remembers the lead session |
+| Hooks | `hooks/` — tells a member session where its board is; remembers the lead session; records each member's sessions; gives a compacted member its resume note |
+| Sessions | `scripts/lib/sessions.mjs` — the `Fleet member:` marker, which session is which member, the resume note |
 | Workflow | `workflows/launch-fleet.js` — members as parallel subagents |
 
 ## Install
@@ -112,5 +113,6 @@ node plugins/agent-fleet/scripts/server/index.mjs examples/kintsugi-night-team/f
 ## Notes
 
 - Many parallel Opus members use a lot of usage; a usage limit pauses the whole fleet. The planner says so when it suggests models.
+- Context is kept lean to save tokens: every model call re-reads a member's whole context, so members are kept under `context.compactAt` (100k tokens by default). Subagents and headless members compact there on their own; the lead clears an idle desktop member past it and wakes it with `fleet resume <id>`, a note that starts it again from its brief and open tickets. The board is the members' memory, so a clear loses nothing, and the dashboard follows a member into its new transcript.
 - Members never commit to the base branch or push: the owner reviews and merges. The dashboard warns if the base branch moves.
 - The board protocol is plain Markdown so any member — and you — can read and edit it.
