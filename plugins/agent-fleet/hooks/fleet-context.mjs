@@ -56,9 +56,7 @@ try {
       if (Number.isFinite(end) && Date.now() < end) {
         // A session on an older plugin than the fleet's is told first: the commands its brief names may be missing.
         const note = versionNote(fleet);
-        if (note) process.stdout.write(`${note}
-
-`);
+        if (note) process.stdout.write(`${note}\n\n`);
         const member = input.source === "compact" ? memberOfSession(fleet, path.join(home, slug), input.session_id) : undefined;
         if (member !== undefined) {
           process.stdout.write(resumeNote(fleet, member, { reason: "compacted" }));

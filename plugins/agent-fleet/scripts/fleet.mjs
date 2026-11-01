@@ -64,8 +64,7 @@ function currentFleetFile() {
 function warnIfOlder(file) {
   try {
     const note = versionNote(JSON.parse(fs.readFileSync(file, "utf8")));
-    if (note) process.stderr.write(`warning: ${note}
-`);
+    if (note) process.stderr.write(`warning: ${note}\n`);
   } catch {
     // An unreadable fleet.json fails where it is read.
   }
