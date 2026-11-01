@@ -6,6 +6,7 @@
 - Members in worktrees: the protocol has a "Writing to the board from a worktree" section — the board is in the main checkout and not in git, so read and write it only by its absolute path, never create or commit board files in the worktree, write ticket paths relative to the repository root, and tell the lead when a write is refused. Briefs, agents and the protocol give absolute board paths for every grep, and the exact `fleet roster … --fleet <dir>` command to record a member's worktree and branch (`--fleet` may now come after the pairs).
 - `fleet status` reads a ticket's status as the dashboard does: `In progress` counts as `in-progress`, not `In`.
 - Status parsing: only the status word counts, so `duplicate → N-019`, `fixed — dev-api @ 7f3a` or `deferred to next sweep` no longer show up as unknown stages; `won't fix`, `on hold` and the like stay one status.
+- A Log time later than the ticket file's last save (a member guessing the clock) is read as that save, so it no longer hides a stale ticket or skews time in stage. A reopened ticket's fix time is the owner's last fix, not the first.
 
 ## 0.3.0 — 2026-11-01
 

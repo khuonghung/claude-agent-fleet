@@ -45,15 +45,19 @@ function parseTicket(id, text, stat, date) {
   const tail = text.includes("## Log") ? text.split("## Log")[1] : "";
   for (const line of tail.split(/\r?\n/)) {
     const m = LOG_LINE.exec(line);
-    if (m) log.push({ time: m[1].padStart(5, "0"), at: clockToIso(date, m[1]), who: m[2].trim(), note: m[3].trim().slice(0, 240) });
+    if (!m) continue;
+    // A line cannot be written after the file was last saved: a later time is a guessed clock, read as that save.
+    const at = clockToIso(date, m[1]);
+    log.push({ time: m[1].padStart(5, "0"), at: Date.parse(at) > stat.mtimeMs + 60_000 ? stat.mtime.toISOString() : at, who: m[2].trim(), note: m[3].trim().slice(0, 240) });
   }
   const severity = (field(text, "Severity").split(/\s+/)[0] ?? "").toLowerCase().replace(/[`*]/g, "");
   const status = normStatus(field(text, "Status"));
-  // When it was fixed or verified, from the Log (the board keeps no status history): fixed at the first line that says
-  // so; verified at the last one, since earlier mentions are pre-checks or reopen-and-retry rounds.
-  const firstSaying = (re) => log.find((l) => re.test(l.note))?.at ?? null;
-  const lastSaying = (re) => log.findLast((l) => re.test(l.note))?.at ?? null;
-  const doneAt = ["fixed", "integrated", "verified"].includes(status) ? (firstSaying(/\b(fixed|committed)\b/i) ?? firstSaying(/\b(integrated|merged|verified)\b/i) ?? stat.mtime.toISOString()) : null;
+  // When it was fixed or verified, from the Log (the board keeps no status history): fixed at the owner's last line that
+  // says so, since a reopened ticket is fixed again; verified at the last line, since earlier ones are pre-checks.
+  const owner = field(text, "Owner").replace(/\s*\(proposed\)/i, "").trim();
+  const lastSaying = (re, who) => log.findLast((l) => re.test(l.note) && (who === undefined || l.who === who))?.at ?? null;
+  const fixLine = /\b(fixed|committed)\b/i;
+  const doneAt = ["fixed", "integrated", "verified"].includes(status) ? (lastSaying(fixLine, owner) ?? lastSaying(fixLine) ?? lastSaying(/\b(integrated|merged|verified)\b/i) ?? stat.mtime.toISOString()) : null;
   const verifiedAt = status === "verified" ? (lastSaying(/\bverified\b/i) ?? stat.mtime.toISOString()) : null;
   return {
     id,
@@ -62,7 +66,7 @@ function parseTicket(id, text, stat, date) {
     status,
     doneAt,
     verifiedAt,
-    owner: field(text, "Owner").replace(/\s*\(proposed\)/i, "").trim(),
+    owner,
     crew: field(text, "Crew").replace(/^[—-]$/, ""),
     verifier: field(text, "Verifier"),
     decision: field(text, "Decision").slice(0, 200),

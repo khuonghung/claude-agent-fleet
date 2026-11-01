@@ -203,3 +203,24 @@ test("board: only the status word counts, whatever follows it", () => {
   };
   for (const [raw, want] of Object.entries(cases)) assert.equal(normStatus(raw), want, raw);
 });
+
+test("board: a guessed future log time reads as the file's last save; a reopened ticket is fixed at the owner's last fix", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "fleet-board-"));
+  try {
+    fs.mkdirSync(path.join(dir, "tickets"));
+    const file = path.join(dir, "tickets", "DA-002.md");
+    fs.writeFileSync(
+      file,
+      "# DA-002: x\n\n- Status: integrated\n- Owner: dev-api\n\n## Log\n- 10:00 dev-api: fixed in a1\n- 10:20 test-api: reopened, criterion 2 fails\n- 10:40 dev-api: fixed in b2\n- 10:50 rm: integrated, merged; dev-api's fixed commit is in\n- 13:30 ba: wording note\n",
+    );
+    const saved = new Date(2026, 10, 1, 11, 0);
+    fs.utimesSync(file, saved, saved);
+    const board = await readBoard({ board: { dir }, mission: { startAt: new Date(2026, 10, 1, 9, 30).toISOString() } });
+    const [t] = board.tickets;
+    assert.equal(t.doneAt, new Date(2026, 10, 1, 10, 40).toISOString());
+    assert.equal(t.log.at(-1).at, saved.toISOString());
+    assert.equal(t.log.at(-1).time, "13:30", "the written time is kept for display");
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
