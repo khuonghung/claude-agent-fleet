@@ -22,6 +22,7 @@ Then `/agent-fleet:launch` starts every member with its brief, model and effort 
 | `/agent-fleet:new [goal]` | Plans a fleet with you and writes its board, briefs and `fleet.json` |
 | `/agent-fleet:launch [members]` | Starts the members (sessions, subagents or headless) and the dashboard |
 | `/agent-fleet:add [who]` | Adds a member to the running fleet and launches it; everyone else keeps working |
+| `/agent-fleet:extend [time]` | Moves the fleet's end later: phases, windows and briefs updated, the team told |
 | `/agent-fleet:dashboard` | Starts or finds the dashboard and gives its URL |
 | `/agent-fleet:status` | Time left, tickets, idle members, what needs you |
 | `/agent-fleet:wrap-up` | Collects reports and writes the final report |

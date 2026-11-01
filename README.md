@@ -58,7 +58,7 @@ Or inside Claude Code:
 /plugin install agent-fleet@agent-fleet
 ```
 
-Start a new session and type `/agent-fleet:` — you should see `new`, `launch`, `add`, `dashboard`, `status` and `wrap-up`.
+Start a new session and type `/agent-fleet:` — you should see `new`, `launch`, `add`, `extend`, `dashboard`, `status` and `wrap-up`.
 
 ### From a clone
 
@@ -110,6 +110,7 @@ While it runs:
 |---|---|
 | `/agent-fleet:status` | Progress · plans · problems: time left, tickets by status, idle members, tokens against the limit |
 | `/agent-fleet:add [who]` | Adds a member while the fleet works — role, area, model, effort — writes its brief and agent, tells the team, and launches it |
+| `/agent-fleet:extend [time]` | Gives the fleet more time — moves its end, the phases and the members' windows, rewrites every brief, and tells the team |
 | `/agent-fleet:dashboard` | Starts (or finds) the dashboard and gives its URL |
 | `/agent-fleet:wrap-up` | Stops the members cleanly, collects their reports and writes the final report for you |
 
