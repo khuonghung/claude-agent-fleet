@@ -22,7 +22,7 @@ export interface Squad {
 }
 
 export interface MascotSpec {
-  shape?: "cloud" | "frog" | "gumdrop" | "heart" | "bean" | "dome" | "cat" | "bunny" | "bear" | "chick" | "owl" | "ghost" | "mochi" | string;
+  shape?: "cloud" | "frog" | "gumdrop" | "bean" | "dome" | "cat" | "bunny" | "bear" | "chick" | "owl" | "ghost" | "mochi" | string;
   color?: string;
   eyes?: "dots" | "googly" | "smile" | string;
   accessory?: "none" | "beret" | "crown" | "headset" | "hardhat" | "glasses" | "sunglasses" | "goggles" | "magnifier" | "bowtie" | "bow" | "antenna" | string;

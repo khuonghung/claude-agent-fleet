@@ -48,7 +48,6 @@ const SHAPES: Record<string, Shape> = {
     clip: [50, 43],
   },
   gumdrop: { d: "M50 14 C60 14 80 52 88 72 C92 82 86 88 76 88 L24 88 C14 88 8 82 12 72 C20 52 40 14 50 14 Z", top: 20, eyeY: 62, dx: 13, mouthY: 74, clip: [43, 36] },
-  heart: { d: "M50 88 C24 72 8 58 9 40 C10 26 22 18 34 20 C42 21 47 27 50 32 C53 27 58 21 66 20 C78 18 90 26 91 40 C92 58 76 72 50 88 Z", top: 22, eyeY: 48, dx: 15, mouthY: 60, feet: false },
   bean: { d: "M16 60 C16 34 30 18 50 18 C70 18 84 34 84 60 L84 74 C84 84 78 88 68 88 L32 88 C22 88 16 84 16 74 Z", top: 19, eyeY: 54, dx: 13, mouthY: 67 },
   dome: { d: "M50 20 C72 20 88 36 88 58 C88 78 72 88 50 88 C28 88 12 78 12 58 C12 36 28 20 50 20 Z", top: 21, eyeY: 56, dx: 13, mouthY: 69 },
   cat: {
@@ -158,7 +157,10 @@ const LEGACY: Record<string, MascotSpec> = {
   "frog|#8fd63a|none": { shape: "frog", color: "#7ccf3a", eyes: "googly", accessory: "none" },
   "dome|#ff5252|magnifier": { shape: "bunny", color: "#ff6b7a", eyes: "dots", accessory: "magnifier" },
   "cloud|#22c3ee|goggles": { shape: "ghost", color: "#38bdf8", eyes: "googly", accessory: "goggles" },
+  "heart|#ff3fb4|sunglasses": { shape: "cloud", color: "#ff4fb8", eyes: "dots", accessory: "sunglasses" },
 };
+/** Shapes no longer drawn, and the one a mascot that still names them gets instead. */
+const RETIRED: Record<string, string> = { heart: "cloud" };
 
 export type Look = Required<MascotSpec> & { topper: string };
 
@@ -192,7 +194,8 @@ export function specOf(agent: AgentDef): Look {
     eyes: agent.mascot?.eyes ?? "dots",
     accessory: agent.mascot?.accessory ?? "none",
   };
-  return { ...spec, ...LEGACY[`${spec.shape}|${spec.color.toLowerCase()}|${spec.accessory}`], topper: "none" };
+  const look = { ...spec, ...LEGACY[`${spec.shape}|${spec.color.toLowerCase()}|${spec.accessory}`], topper: "none" };
+  return { ...look, shape: RETIRED[look.shape] ?? look.shape };
 }
 
 /**

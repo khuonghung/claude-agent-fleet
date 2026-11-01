@@ -227,8 +227,8 @@
       "worktree": false,
       "readOnly": true,
       "mascot": {
-        "shape": "heart",
-        "color": "#ff3fb4",
+        "shape": "cloud",
+        "color": "#ff4fb8",
         "eyes": "dots",
         "accessory": "sunglasses"
       },
