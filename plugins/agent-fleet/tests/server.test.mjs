@@ -7,6 +7,7 @@ import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { clockToIso, normStatus, readBoard } from "../scripts/server/board.mjs";
+import { readGit } from "../scripts/server/git.mjs";
 import { createTranscripts, redactHome } from "../scripts/server/transcripts.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -303,6 +304,42 @@ test("board: the team channel's posts, their kinds, and a guessed future time re
     assert.equal(board.channel.posts.at(-1).at, saved.toISOString());
     fs.rmSync(file);
     assert.equal((await readBoard({ board: { dir }, mission: { startAt: saved.toISOString() } })).channel, null, "a board from before the channel");
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("git: integrated commits are counted against the plan's integration branch, else the release manager's; with neither, none is claimed", async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "fleet-git-"));
+  const git = (...args) => {
+    const r = spawnSync("git", ["-C", dir, ...args], { encoding: "utf8" });
+    assert.equal(r.status, 0, r.stderr);
+  };
+  try {
+    git("init", "-q", "-b", "main");
+    git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "--allow-empty", "-m", "base");
+    git("checkout", "-q", "-b", "claude/dev-api");
+    git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "--allow-empty", "-m", "fix: one");
+    git("checkout", "-q", "-b", "nt-integration");
+    git("checkout", "-q", "claude/dev-api");
+    git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "--allow-empty", "-m", "fix: two");
+    const agents = [{ id: "lead", role: "lead", launch: "self" }, { id: "dev-api", role: "developer" }, { id: "rm", role: "release-manager" }];
+    const roster = { "dev-api": { branch: "claude/dev-api" } };
+    const cfg = (integration) => ({ repo: { dir, base: "main", integration }, agents });
+    const count = (g) => g.branches.find((b) => b.agent === "dev-api").commits.map((c) => c.integrated);
+
+    const named = await readGit(cfg("nt-integration"), roster);
+    assert.equal(named.integration, "nt-integration");
+    assert.deepEqual(count(named), [false, true], "fix: one reached the integration branch, fix: two did not");
+    assert.ok(named.branches.some((b) => b.branch === "nt-integration" && b.agent === "rm"), "the integration branch is read, as the release manager's");
+
+    const fromRoster = await readGit(cfg(undefined), { ...roster, rm: { branch: "nt-integration" } });
+    assert.equal(fromRoster.integration, "nt-integration");
+    assert.deepEqual(count(fromRoster), [false, true]);
+
+    const none = await readGit(cfg(undefined), roster);
+    assert.equal(none.integration, null);
+    assert.deepEqual(count(none), [false, false]);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

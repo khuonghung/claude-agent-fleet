@@ -97,7 +97,7 @@ function AgentCard({ s, agent, now, onOpen }: { s: FleetState; agent: AgentDef; 
             <dt>{t("card.commits")}</dt>
             <dd>
               {commits.length}
-              {commits.length > 0 && <small> · {t("card.inInt", { n: commits.filter((c) => c.integrated).length })}</small>}
+              {commits.length > 0 && s.git?.integration && <small> · {t("card.inInt", { n: commits.filter((c) => c.integrated).length })}</small>}
             </dd>
           </div>
         )}

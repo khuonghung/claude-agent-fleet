@@ -28,6 +28,8 @@ export function Kpis({ s, now }: { s: FleetState; now: number }) {
   const branches = (s.git?.branches ?? []).filter((b) => b.branch !== s.git?.integration);
   const commits = branches.reduce((n, b) => n + b.commits.filter((c) => !c.merge).length, 0);
   const integrated = branches.reduce((n, b) => n + b.commits.filter((c) => !c.merge && c.integrated).length, 0);
+  // With no integration branch known there is nothing to count against: a dash, not a misleading 0.
+  const noIntegration = s.git?.integration === null;
   const tokens = s.agents.reduce((n, a) => n + (s.telemetry[a.id]?.outputTokens ?? 0), 0);
   const budget = s.budget?.outputTokens;
   const found = tickets.filter((x) => Date.parse(x.created) >= Date.parse(s.mission.startAt)).length;
@@ -41,7 +43,7 @@ export function Kpis({ s, now }: { s: FleetState; now: number }) {
     { key: "done", icon: "check", label: t("kpi.done"), value: done, unit: `/ ${tickets.length}`, note: t("kpi.found", { n: found }) },
     { key: "verified", icon: "spark", label: t("kpi.verified"), value: verified, unit: "", tone: verified ? "ok" : "" },
     { key: "hot", icon: "alert", label: t("kpi.hot"), value: hot, unit: "", tone: hot ? "bad" : "ok" },
-    { key: "int", icon: "branch", label: t("kpi.integrated"), value: integrated, unit: `/ ${commits}` },
+    { key: "int", icon: "branch", label: t("kpi.integrated"), value: integrated, unit: `/ ${commits}`, note: noIntegration ? t("kpi.noIntegration") : "" },
   ] as const;
 
   return (
@@ -53,7 +55,7 @@ export function Kpis({ s, now }: { s: FleetState; now: number }) {
             {x.label}
           </span>
           <span className="kpi-value">
-            <Num value={x.value} />
+            {x.key === "int" && noIntegration ? "—" : <Num value={x.value} />}
             {x.unit && <small>{x.unit}</small>}
           </span>
           {"note" in x && x.note && <span className="kpi-note">{x.note}</span>}

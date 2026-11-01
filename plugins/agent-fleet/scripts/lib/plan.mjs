@@ -80,6 +80,7 @@ export function normalizePlan(input, { cwd = process.cwd(), now = new Date(), le
   plan.repo ??= {};
   plan.repo.dir = path.resolve(cwd, plan.repo.dir ?? ".");
   plan.repo.base ??= "main";
+  if (plan.repo.integration !== undefined && !(typeof plan.repo.integration === "string" && plan.repo.integration.trim())) problems.push("repo.integration must be a branch name");
   plan.launch ??= "session";
   if (!["session", "subagent", "headless"].includes(plan.launch)) problems.push(`launch must be session, subagent or headless, not ${plan.launch}`);
   // An output-token limit is the user's choice: none (only measured), or a limit with what the lead does on reaching

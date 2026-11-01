@@ -13,12 +13,28 @@ async function git(dir, ...args) {
   }
 }
 
+/**
+ * The branch the builders' work is merged into: the plan's `repo.integration`, else the branch the release manager
+ * recorded in the roster (their worktree branch is the integration branch). None when neither is known yet.
+ */
+export function integrationOf(cfg, roster) {
+  if (cfg.repo.integration) return cfg.repo.integration;
+  const manager = cfg.agents.find((agent) => agent.role === "release-manager");
+  return (manager && roster[manager.id]?.branch) || undefined;
+}
+
 export async function readGit(cfg, roster) {
-  const { dir, base, integration, baseline } = cfg.repo;
+  const { dir, base, baseline } = cfg.repo;
+  const integration = integrationOf(cfg, roster);
   const own = cfg.agents.map((agent) => ({ agent: agent.id, branch: roster[agent.id]?.branch })).filter(({ branch }) => branch && branch !== base && branch.includes("/"));
+  // A named integration branch (often without a slash, made by the lead) is read too, as the integrator's.
+  if (integration && !own.some(({ branch }) => branch === integration)) {
+    const integrator = cfg.agents.find((agent) => agent.role === "release-manager") ?? cfg.agents.find((agent) => agent.launch === "self");
+    own.push({ agent: integrator?.id ?? "lead", branch: integration });
+  }
   // All git reads at once: a dozen members cost one round trip, not a dozen.
   const [reached, baseHead, ...logs] = await Promise.all([
-    git(dir, "rev-list", `${base}..${integration}`),
+    integration ? git(dir, "rev-list", `${base}..${integration}`) : "",
     git(dir, "rev-parse", "--short=8", base),
     ...own.map(({ branch }) => git(dir, "log", "-n", "60", "--format=%H%x1f%h%x1f%cI%x1f%s%x1f%P", `${base}..${branch}`)),
   ]);
@@ -33,5 +49,5 @@ export async function readGit(cfg, roster) {
         })
       : [],
   }));
-  return { base, baseHead, baselineHead: baseline, baseUntouched: !baseline || baseHead.startsWith(baseline) || baseline.startsWith(baseHead), integration, branches };
+  return { base, baseHead, baselineHead: baseline, baseUntouched: !baseline || baseHead.startsWith(baseline) || baseline.startsWith(baseHead), integration: integration ?? null, branches };
 }

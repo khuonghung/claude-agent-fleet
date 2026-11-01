@@ -42,13 +42,11 @@ export function Branches({ s, now }: { s: FleetState; now: number }) {
                 <span className="br-name mono">{b.branch.replace(/^claude\//, "")}</span>
                 <span className="br-last">{last ? `${last.subject} · ${ago(now, last.at)}` : t("sd.noCommit")}</span>
               </span>
-              <span className="br-bar" title={`${inInt}/${own.length} ${t("dr.integrated")}`}>
+              <span className="br-bar" title={g.integration ? `${inInt}/${own.length} ${t("dr.integrated")}` : t("kpi.noIntegration")}>
                 <i style={{ width: `${(own.length / max) * 100}%` }} />
-                <i className="is-in" style={{ width: `${(inInt / max) * 100}%` }} />
+                {g.integration && <i className="is-in" style={{ width: `${(inInt / max) * 100}%` }} />}
               </span>
-              <span className="br-n mono">
-                {inInt}/{own.length}
-              </span>
+              <span className="br-n mono">{g.integration ? `${inInt}/${own.length}` : own.length}</span>
             </li>
           );
         })}

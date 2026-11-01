@@ -104,7 +104,8 @@ export function App() {
   const counts: Partial<Record<Tab, string>> = {
     org: `${state.agents.length}`,
     tickets: `${tickets.length}`,
-    code: `${state.git?.branches.reduce((n, b) => n + b.commits.filter((c) => !c.merge).length, 0) ?? 0}`,
+    // The members' own commits: the integration branch holds the same commits again.
+    code: `${state.git?.branches.filter((b) => b.branch !== state.git?.integration).reduce((n, b) => n + b.commits.filter((c) => !c.merge).length, 0) ?? 0}`,
     reports: `${state.board?.reports.length ?? 0}`,
   };
 

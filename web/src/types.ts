@@ -157,7 +157,8 @@ export interface GitState {
   baseHead: string;
   baselineHead: string;
   baseUntouched: boolean;
-  integration: string;
+  /** null until the plan names it (`repo.integration`) or the release manager records their branch. */
+  integration: string | null;
   branches: Branch[];
 }
 
