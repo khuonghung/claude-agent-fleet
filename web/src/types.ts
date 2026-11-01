@@ -150,6 +150,10 @@ export interface Branch {
   agent: string;
   branch: string;
   commits: Commit[];
+  /** What the branch changes over the base (as a merge would bring it); absent from servers before 0.7. */
+  stat?: { files: number; insertions: number; deletions: number };
+  /** Files changed, by package (`apps/api`, `(root)`). */
+  packages?: Record<string, number>;
 }
 
 export interface GitState {
@@ -191,6 +195,44 @@ export interface Telemetry {
   messagesTo: Record<string, number>;
 }
 
+/** One merge of an integration round, as `fleet integrate` plans it. */
+export interface PlannedMerge {
+  tickets: string[];
+  sha: string;
+  commits: number;
+  packages: string[];
+  message: string;
+  command: string;
+}
+
+/** The round's merge plan (`fleet integrate --json`), or why there is none (`error`). */
+export interface IntegrationPlan {
+  at: string;
+  error?: string;
+  into?: string;
+  head?: string;
+  merges?: PlannedMerge[];
+  blocked?: { id: string; owner: string; below: { sha: string; ticket: string; status: string }[] }[];
+  merged?: { id: string; sha: string }[];
+  missing?: { id: string; fix: string }[];
+  unticketed?: { with: string; sha: string; subject: string }[];
+  fullSuite?: { needed: boolean; because: string[] };
+}
+
+export interface DoctorCheck {
+  name: string;
+  state: "ok" | "warn" | "fail";
+  detail: string;
+}
+
+/** The pre-flight checks (`fleet doctor --json`). */
+export interface Doctor {
+  at: string;
+  ok?: boolean;
+  checks?: DoctorCheck[];
+  error?: string;
+}
+
 export interface Probe {
   name: string;
   port: number;
@@ -230,6 +272,8 @@ export interface FleetState {
   git: GitState | null;
   telemetry: Record<string, Telemetry | null>;
   probes: Probe[];
+  integration?: IntegrationPlan | null;
+  doctor?: Doctor | null;
   transitions: Transition[];
   history: HistoryPoint[];
 }

@@ -6,6 +6,7 @@ import "./controls.css";
 import "./flow.css";
 import "./ticket-modal.css";
 import "./mascot.css";
+import "./code-report.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

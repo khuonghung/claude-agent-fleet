@@ -13,7 +13,9 @@ import { Kpis } from "./parts/Kpis";
 import { LooksContext, useLooks } from "./parts/Mascot";
 import { Members, MissionPlan, OrgChart } from "./parts/Org";
 import { Attention, Lineup } from "./parts/Overview";
-import { Branches, Infra, Notices, Reports } from "./parts/Side";
+import { BranchList, CodeKpis, CommitTimeline, Hotspots, IntegrationRound, Preflight } from "./parts/Code";
+import { Decisions, MemberScores, Risks, Scorecard, TicketTable } from "./parts/Report";
+import { Notices, Reports } from "./parts/Side";
 import { Threads } from "./parts/Threads";
 import { Slider } from "./ui/Controls";
 import { Palette, Toasts } from "./ui/Live";
@@ -197,20 +199,36 @@ export function App() {
             )}
 
             {tab === "code" && (
-              <div className="pair">
-                <Branches s={state} now={now} />
-                <div className="stack">
-                  <Infra s={state} />
-                  <Comms s={state} />
+              <>
+                <CodeKpis s={state} />
+                <div className="pair pair-wide">
+                  <IntegrationRound s={state} now={now} onTicket={onTicket} />
+                  <Preflight s={state} now={now} />
                 </div>
-              </div>
+                <ChartCard title={t("cd.timeline")} note={t("cd.timelineNote")} wide>
+                  <CommitTimeline s={state} now={now} onAgent={onAgent} />
+                </ChartCard>
+                <div className="pair">
+                  <BranchList s={state} now={now} onTicket={onTicket} />
+                  <Hotspots s={state} onAgent={onAgent} />
+                </div>
+              </>
             )}
 
             {tab === "reports" && (
-              <div className="pair">
-                <Reports s={state} now={now} onDoc={onDoc} />
-                <Notices s={state} />
-              </div>
+              <>
+                <Scorecard s={state} now={now} onDoc={onDoc} />
+                <MemberScores s={state} now={now} onAgent={onAgent} onDoc={onDoc} />
+                <TicketTable s={state} now={now} onTicket={onTicket} />
+                <div className="pair">
+                  <Risks s={state} onTicket={onTicket} />
+                  <Decisions s={state} now={now} onDoc={onDoc} />
+                </div>
+                <div className="pair">
+                  <Reports s={state} now={now} onDoc={onDoc} />
+                  <Notices s={state} />
+                </div>
+              </>
             )}
           </main>
           <Drawer s={state} open={open} now={now} onClose={close} onTicket={onTicket} onAgent={onAgent} onDoc={onDoc} />
