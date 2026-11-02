@@ -91,7 +91,7 @@ const filesOf = (text) =>
 const POST = /^###\s+(\d{1,2}:\d{2})\s+([a-z][a-z0-9-]*)\s*(?:[·\-–—|:]\s*([a-z-]+))?/i;
 const POST_KINDS = new Set(["question", "proposal", "answer", "concern", "agree", "decision", "ready", "blocked", "handoff", "status"]);
 
-/** A discussion thread: its header fields and its posts (`### HH:MM <id> · <kind>` and the text under it). */
+/** A discussion thread: its header fields, its context and its posts (`### HH:MM <id> · <kind>` and the text under it). */
 export function parseThread(name, text, stat, startAt) {
   const posts = [];
   const body = text.includes("## Posts") ? text.split("## Posts").slice(1).join("## Posts") : "";
@@ -105,6 +105,8 @@ export function parseThread(name, text, stat, startAt) {
     } else if (current) current.text += `${line}\n`;
   }
   for (const p of posts) p.text = p.text.trim().slice(0, 600);
+  // What the thread is about, as its opener wrote it: the text under `## Context`, up to the posts.
+  const context = /^##\s+Context\s*$([\s\S]*?)(?=^##\s|(?![\s\S]))/m.exec(text)?.[1].trim().slice(0, 600) ?? "";
   const list = (value) => value.split(/[,\s]+/).map((x) => x.replace(/[`*@]/g, "")).filter((x) => /^[a-z][a-z0-9-]*$/.test(x));
   const status = field(text, "Status").toLowerCase().split(/\s/)[0] || "open";
   return {
@@ -117,6 +119,7 @@ export function parseThread(name, text, stat, startAt) {
     decideBy: field(text, "Decide by").slice(0, 20),
     decideAt: /^\d{1,2}:\d{2}/.test(field(text, "Decide by")) ? clockToIso(startAt, field(text, "Decide by").slice(0, 5).replace(/[^\d:]/g, "")) : null,
     decision: field(text, "Decision").slice(0, 300),
+    context,
     updated: stat.mtime.toISOString(),
     posts: posts.slice(-40),
   };

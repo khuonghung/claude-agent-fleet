@@ -32,7 +32,7 @@ Blocking: no.
 A post without a kind.
 `;
 
-test("a thread: header fields, typed posts with their text, the deadline on the mission's clock", () => {
+test("a thread: header fields, its context, typed posts with their text, the deadline on the mission's clock", () => {
   const stat = { mtime: new Date("2026-11-01T07:20:00Z") };
   const th = parseThread("DA-003", THREAD, stat, "2026-11-01T05:00:00Z");
   assert.equal(th.title, "Retry policy for the export client");
@@ -43,6 +43,7 @@ test("a thread: header fields, typed posts with their text, the deadline on the 
   assert.equal(th.decideBy, "14:30");
   assert.ok(th.decideAt?.endsWith("Z"));
   assert.equal(th.decision, "");
+  assert.equal(th.context, "Question: retry on 429 or not?");
   assert.deepEqual(th.posts.map((p) => [p.time, p.who, p.kind]), [
     ["14:05", "architect", "proposal"],
     ["14:12", "dev-web", "agree"],
