@@ -35,6 +35,17 @@ What is being decided or done together, what is known, the options.
 
 Rules: append posts at the end, never edit another member's post; after posting, ring the doorbell — one `SendMessage` line to the members you need ("posted a proposal in threads/<topic>.md, answer by HH:MM"). Every member named in `Members` answers by `Decide by`; no answer by then counts as agreement. The owner decides, writes the `Decision` (and the ticket's `Decision` line), sets `Status: decided`; everyone follows it, and it is reopened only with new evidence. A ticket worked by several members names them in `- Crew:` and has a thread `threads/<ID>.md`. The `discuss-and-decide` and `swarm-ticket` skills say how.
 
+A thread is the written record of a conversation, so write it as people talk in a meeting that keeps minutes, in the language of the mission's goal with its proper accents:
+
+- **Each post opens with its point**: the question, your answer (agree, disagree, what must change) or what you need from whom, naming people as `@id`. The evidence — `path:line`, commits, command output — follows it and stays, since the thread is the record; it never comes first.
+  - Not: `Review of ec28a33a (target-architecture.md, constraints-and-fit.md, ADR-0098, ADR-0099). Severity: medium …`
+  - But: `@sa-platform I read ec28a33a: five names differ from mine, so the merged pack would contradict itself. Three are yours to fix, one is your pick, one already matches: …`
+- **The opener asks**: the question in one sentence, the options, a recommendation and the default taken if nobody answers by `Decide by`.
+- **Act on a point only once it is decided** (or its deadline has passed with the default): a change made while the owner may still choose otherwise is work undone a minute later.
+- **The `Decision:` line is a plain sentence**: what was chosen and who does what. The dashboard shows it on the discussion, so it must read without the posts.
+  - Not: `- Decision: sa-brain names adopted (…); codes = ADR-0099 decision 5. See post 23:51`
+  - But: `- Decision: the edit-rules table is knowledge.wiki_restriction ("edit restriction"), page order is the order list in each folder's README, members get six tools; sa-platform updates the architecture pages.`
+
 ## Team channel
 
 `CHANNEL.md` is the team's one shared line: short news that everyone may need in the next minutes and that fits no ticket or thread — "touching `src/contracts/items.ts` until 12:30", "the stack is down, restarting", "integration round in 5 min", "who knows why `api.test.ts` flakes?". One line per post, newest at the bottom:

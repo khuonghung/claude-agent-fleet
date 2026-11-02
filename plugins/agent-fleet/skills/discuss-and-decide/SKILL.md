@@ -53,10 +53,12 @@ B breaks the retry test in `tests/client.test.ts:88` (it assumes A's error shape
 Proposed change: keep A's error shape inside B. Blocking: no.
 ```
 
+- **Open with your point**, the way you would say it across the table: agree or not, what must change, what you need from whom (`@id`). Evidence follows it and stays — the thread is the record — but a post that opens with a commit range or a list of files makes everyone dig for its meaning. Write in the mission's language, with its accents.
 - Kinds: `agree`, `concern`, `proposal` (a better option), `question`, `answer`.
 - A concern carries **evidence** and says whether it is **blocking** (you cannot live with it) or not.
 - Argue the technical point, not the person; no performative agreement — "agree" with the condition that matters, or a concern with evidence.
 - One post per round; read all posts before you write.
+- Do not act on a point still open: a change made before the owner decides is undone when they choose otherwise. Wait for the decision, or the deadline and its default.
 
 ## 4. Decide (the owner)
 
@@ -72,7 +74,7 @@ Not chosen: A — needs a migration we cannot verify before the freeze.
 Revisit if: token refresh shows up in the e2e failures.
 ```
 
-   Set `Status: decided`, fill `Decision:`, and copy it to the ticket's `Decision` line and Log.
+   Set `Status: decided`, fill `Decision:` with one plain sentence — what was chosen and who does what, readable without the posts, since the dashboard shows it on the discussion ("B, keeping A's error shape; dev-api changes the auth contract by 15:00", not "B per 14:25, see posts") — and copy it to the ticket's `Decision` line and Log.
 3. Turn the decision into work: tickets, owners, the order (who goes first, what "ready" means).
 
 If the discussion does not converge in two rounds, the owner decides anyway; if the owner cannot (the question is above their role), escalate one level (see `team-communication`) with the thread as the record.
@@ -89,3 +91,4 @@ If the discussion does not converge in two rounds, the owner decides anyway; if 
 - Ten posts and no options — reframe as options and a recommendation.
 - The same two members going back and forth — the owner decides now.
 - A decision made in a direct message — write it in the thread, or it did not happen.
+- Posts that open with hashes, file lists or "see post 23:51" — say the point first, then the evidence.
