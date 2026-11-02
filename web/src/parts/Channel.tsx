@@ -37,28 +37,46 @@ function entriesOf(posts: ChannelPost[], threads: Thread[]): Entry[] {
   return out;
 }
 
-/** A post's text with `code`, the board's ticket ids (opened on click) and members' ids (as mentions) brought out. */
+/** A post without its author's own id in front ("po: …" by po): the channel already shows who posted. */
+const unsigned = (text: string, who: string) => text.replace(new RegExp(`^@?${who.replace(/[-]/g, "\\-")}\\s*:\\s*`), "") || text;
+
+/**
+ * A post's text with `code`, **bold**, the board's ticket ids (opened on click) and members' ids (as mentions) brought out,
+ * and commit hashes set back. A member's id inside a path or a branch name (`reports/po.md`) is not a mention.
+ */
 function RichText({ text, tickets, members, onTicket }: { text: string; tickets: Set<string>; members: string[]; onTicket: (id: string) => void }) {
   const parts = useMemo(() => {
     const ids = members.map((m) => m.replace(/[-]/g, "\\-")).join("|");
-    const re = new RegExp(`(\`[^\`]+\`)|\\b([A-Z][A-Z0-9]{0,5}-\\d{1,5})\\b|(@?\\b(?:${ids || "(?!)"})\\b)`, "g");
+    const code = "(`[^`]+`)";
+    const bold = "\\*\\*([^*]+)\\*\\*";
+    const ticket = "\\b([A-Z][A-Z0-9]{0,5}-\\d{1,5})\\b";
+    const mention = `((?<![\\w/.-])@?\\b(?:${ids || "(?!)"})\\b(?![\\w-]|\\.\\w))`;
+    const sha = "((?<![\\w/.-])(?=[0-9a-f]*\\d)(?=[0-9a-f]*[a-f])[0-9a-f]{7,40}(?![\\w-]))";
+    const re = new RegExp([code, bold, ticket, mention, sha].join("|"), "g");
     const out: ReactNode[] = [];
     let at = 0;
     for (const m of text.matchAll(re)) {
       if (m.index > at) out.push(text.slice(at, m.index));
       const key = `${m.index}`;
       if (m[1]) out.push(<code key={key}>{m[1].slice(1, -1)}</code>);
-      else if (m[2] && tickets.has(m[2])) {
-        const id = m[2];
+      else if (m[2]) out.push(<b key={key}>{m[2]}</b>);
+      else if (m[3] && tickets.has(m[3])) {
+        const id = m[3];
         out.push(
           <button key={key} type="button" className="cn-ticket mono" onClick={() => onTicket(id)}>
             {id}
           </button>,
         );
-      } else if (m[3])
+      } else if (m[4])
         out.push(
           <span key={key} className="cn-mention">
-            @{m[3].replace(/^@/, "")}
+            @{m[4].replace(/^@/, "")}
+          </span>,
+        );
+      else if (m[5])
+        out.push(
+          <span key={key} className="cn-sha mono" title={m[5]}>
+            {m[5].slice(0, 8)}
           </span>,
         );
       else out.push(m[0]);
@@ -293,7 +311,7 @@ function ChannelView({ s, now, onAgent, onTicket, onDoc, big, onSize }: Props & 
                             {p.time}
                           </time>
                           {p.kind !== "fyi" && p.kind !== "post" && <span className={`cn-kind k-${p.kind}`}>{t(`cn.k.${p.kind}`)}</span>}
-                          <span className="cn-text">{rich(p.text)}</span>
+                          <span className="cn-text">{rich(unsigned(p.text, p.who))}</span>
                         </div>
                       ))}
                     </div>
