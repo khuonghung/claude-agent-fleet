@@ -1,9 +1,16 @@
 import type { T } from "./i18n";
-import type { AgentDef, FleetState, Mission, Telemetry, Ticket } from "./types";
+import type { AgentDef, FleetState, Mission, Telemetry, Thread, Ticket } from "./types";
 
 export const DONE = ["fixed", "integrated", "verified"];
 export const CLOSED = [...DONE, "deferred", "wont-fix", "duplicate"];
 export const SEVERITY_RANK: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
+
+/** Members named in an open thread who have not posted in it yet. */
+export const waitingOn = (th: Thread) => {
+  if (th.status !== "open") return [];
+  const posted = new Set(th.posts.map((p) => p.who));
+  return th.members.filter((m) => m !== th.owner && !posted.has(m));
+};
 
 export const startOf = (m: Mission): number => Date.parse(m.startAt);
 export const endOf = (m: Mission): number => Date.parse(m.endAt);

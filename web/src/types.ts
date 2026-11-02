@@ -111,6 +111,8 @@ export interface Thread {
   /** `decideBy` as a time on the mission's clock, when it is written as HH:MM. */
   decideAt: string | null;
   decision: string;
+  /** What the thread is about: the text under its `## Context`. */
+  context: string;
   updated: string;
   posts: Post[];
 }

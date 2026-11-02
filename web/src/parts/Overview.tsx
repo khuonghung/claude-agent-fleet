@@ -1,8 +1,7 @@
 import { useI18n } from "../i18n";
-import { agentStatus, cheerOf, agentStatusLabel, ago, CLOSED, compact, endOf, launched, modelMismatch, statusLabel } from "../lib";
+import { agentStatus, cheerOf, agentStatusLabel, ago, CLOSED, compact, endOf, launched, modelMismatch, statusLabel, waitingOn } from "../lib";
 import type { FleetState } from "../types";
 import { Mascot } from "./Mascot";
-import { waitingOn } from "./Threads";
 import { Fold } from "../ui/Controls";
 
 /** A prefix every member name shares ("kt-"), left out on the stage where names are short. */

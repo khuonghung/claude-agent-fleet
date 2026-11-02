@@ -15,7 +15,6 @@ import { Attention, Lineup } from "./parts/Overview";
 import { BranchList, CodeKpis, CommitTimeline, Hotspots, IntegrationRound, Preflight } from "./parts/Code";
 import { Decisions, MemberScores, Risks, Scorecard, TicketTable } from "./parts/Report";
 import { Notices, Reports } from "./parts/Side";
-import { Threads } from "./parts/Threads";
 import { Slider } from "./ui/Controls";
 import { Palette, Toasts } from "./ui/Live";
 import { Logo } from "./ui/Logo";
@@ -152,8 +151,7 @@ export function App() {
                   </div>
                   <div className="col-side">
                     <Attention s={state} now={now} onTicket={onTicket} onAgent={onAgent} />
-                    {(state.board?.channel?.posts.length ?? 0) > 0 && <Channel s={state} now={now} onAgent={onAgent} onTicket={onTicket} onDoc={onDoc} />}
-                    {(state.board?.threads ?? []).some((x) => x.status === "open") && <Threads s={state} now={now} onAgent={onAgent} onDoc={onDoc} />}
+                    {((state.board?.channel?.posts.length ?? 0) > 0 || (state.board?.threads ?? []).some((x) => x.status === "open")) && <Channel s={state} now={now} onAgent={onAgent} onTicket={onTicket} onDoc={onDoc} />}
                     <Feed s={state} onTicket={onTicket} onAgent={onAgent} />
                   </div>
                 </div>
@@ -167,8 +165,7 @@ export function App() {
                 </div>
                 <div className="col-side">
                   <MissionPlan s={state} now={now} />
-                  {state.board?.channel && <Channel s={state} now={now} onAgent={onAgent} onTicket={onTicket} onDoc={onDoc} />}
-                  <Threads s={state} now={now} onAgent={onAgent} onDoc={onDoc} />
+                  {(state.board?.channel || (state.board?.threads ?? []).length > 0) && <Channel s={state} now={now} onAgent={onAgent} onTicket={onTicket} onDoc={onDoc} />}
                   <Comms s={state} />
                   <Feed s={state} onTicket={onTicket} onAgent={onAgent} />
                 </div>

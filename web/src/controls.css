@@ -143,38 +143,22 @@ kbd { font: 500 11px var(--mono); color: var(--muted); background: var(--panel-2
 /* Member cards */
 .tag.is-off { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 40%, var(--line)); }
 
-/* Discussions */
-.th-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.th { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); overflow: hidden; transition: border-color .2s, box-shadow .2s; }
-.th.is-open { border-color: color-mix(in srgb, var(--gold) 40%, var(--line)); box-shadow: var(--shadow); }
-.th-hd { width: 100%; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "st title chev" "meta meta meta"; gap: 4px 8px; align-items: center; padding: 9px 10px; border: 0; background: none; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
-.th-hd:hover { background: var(--panel-2); }
-.th-st { grid-area: st; font: 600 11px var(--font); text-transform: uppercase; letter-spacing: .05em; padding: 1px 6px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+/* Discussions: their state and post kinds, shown in the team channel and the ticket. */
+.th-st { font: 600 11px var(--font); text-transform: uppercase; letter-spacing: .05em; padding: 1px 6px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
 .th-st.st-open { color: var(--gold); border-color: color-mix(in srgb, var(--gold) 45%, var(--line)); background: var(--gold-soft); }
 .th-st.st-decided { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, var(--line)); }
-.th-title { grid-area: title; font-size: 13px; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.th-meta { grid-area: meta; display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--faint); }
-.th-chev { grid-area: chev; color: var(--faint); transition: transform .25s var(--ease); }
-.th.is-open .th-chev { transform: rotate(180deg); }
-.th-body { display: grid; gap: 8px; padding: 0 10px 10px; animation: rise .3s var(--ease) both; }
-.th-ticket { justify-self: start; font-size: 11px; color: var(--muted); }
 .th-decision, .th-waiting { margin: 0; display: flex; gap: 6px; align-items: flex-start; font-size: 12.5px; padding: 7px 9px; border-radius: 8px; }
 .th-decision { background: color-mix(in srgb, var(--ok) 12%, transparent); }
 .th-decision .icon { color: var(--ok); margin-top: 2px; }
 .th-waiting { background: var(--gold-soft); color: var(--ink); }
 .th-waiting .icon { color: var(--gold); margin-top: 2px; }
-.th-posts { list-style: none; margin: 0; padding: 0 0 0 4px; display: grid; gap: 8px; max-height: 360px; overflow: auto; border-left: 2px solid var(--line); }
-.po { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; padding-left: 8px; animation: slideIn .3s var(--ease) both; }
-.po-av { border: 0; background: none; padding: 0; cursor: pointer; }
-.po-hd { display: flex; align-items: center; gap: 6px; font-size: 12px; }
-.po-hd time { margin-left: auto; font-size: 11px; color: var(--faint); }
 .po-kind { font: 500 11px var(--font); padding: 0 5px; border-radius: 4px; background: var(--panel-2); border: 1px solid var(--line); color: var(--muted); }
 .po-kind.k-decision, .po-kind.k-agree, .po-kind.k-ready { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, var(--line)); }
 .po-kind.k-concern, .po-kind.k-blocked { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 40%, var(--line)); }
 .po-kind.k-proposal, .po-kind.k-question { color: var(--info); border-color: color-mix(in srgb, var(--info) 40%, var(--line)); }
 /* Team channel: a chat channel — message groups, time dividers, a composer that shows how to post. */
-.channel { position: relative; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; padding: 0; overflow: hidden; }
-.cn-hd { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-bottom: 1px solid var(--line); background: var(--panel-2); }
+.channel { position: relative; display: flex; flex-direction: column; padding: 0; overflow: hidden; }
+.cn-hd { flex: none; display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-bottom: 1px solid var(--line); background: var(--panel-2); }
 .cn-hash { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; background: var(--gold-soft); color: var(--gold); font: 600 16px var(--mono); }
 .cn-name { display: grid; min-width: 0; line-height: 1.25; }
 .cn-name b { font-size: 13.5px; }
@@ -185,7 +169,7 @@ kbd { font: 500 11px var(--mono); color: var(--muted); background: var(--panel-2
 .cn-doc { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--muted); cursor: pointer; transition: color .15s, border-color .15s; }
 .cn-doc:hover { color: var(--ink); border-color: var(--line-2); }
 
-.cn-scroll { max-height: 420px; overflow: auto; overscroll-behavior: contain; padding: 6px 0 10px; scrollbar-width: thin; }
+.cn-scroll { position: relative; flex: 1 1 auto; min-height: 0; max-height: 420px; overflow: auto; overscroll-behavior: contain; padding: 6px 0 10px; scrollbar-width: thin; }
 .cn-list { list-style: none; margin: 0; padding: 0; }
 .cn-divider { display: flex; align-items: center; gap: 10px; margin: 10px 14px 4px; color: var(--faint); font: 500 11px var(--font); }
 .cn-divider::before, .cn-divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
@@ -219,7 +203,7 @@ kbd { font: 500 11px var(--mono); color: var(--muted); background: var(--panel-2
 .cn-empty p { margin: 0; font-size: 12.5px; max-width: 30ch; }
 
 .cn-fresh { position: absolute; left: 50%; bottom: 62px; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 4px; padding: 4px 11px; border-radius: 999px; border: 0; background: var(--ink); color: var(--panel); font-size: 11.5px; font-weight: 500; cursor: pointer; box-shadow: var(--shadow); animation: pop .25s var(--ease) both; }
-.cn-compose { display: flex; align-items: center; gap: 8px; margin: 0 12px 12px; padding: 9px 11px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel-2); color: var(--faint); cursor: pointer; text-align: left; transition: border-color .15s; }
+.cn-compose { flex: none; display: flex; align-items: center; gap: 8px; margin: 0 12px 12px; padding: 9px 11px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel-2); color: var(--faint); cursor: pointer; text-align: left; transition: border-color .15s; }
 .cn-compose:hover { border-color: var(--line-2); }
 .cn-compose code { flex: 1; min-width: 0; font: 12px var(--mono); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cn-copy { font-size: 11px; font-weight: 500; color: var(--muted); padding: 2px 8px; border-radius: 6px; background: var(--panel); border: 1px solid var(--line); }
@@ -233,9 +217,43 @@ kbd { font: 500 11px var(--mono); color: var(--muted); background: var(--panel-2
 .channel.is-big .cn-group { padding-left: 20px; padding-right: 20px; }
 .channel.is-big .cn-msg { font-size: 14px; }
 .channel.is-big .cn-compose { margin: 0 18px 16px; }
-@media (prefers-reduced-motion: reduce) { .cn-group, .cn-fresh, .cn-wrap, .cn-dialog { animation: none; } }
-.po-text { display: block; font-size: 12.5px; color: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; margin-top: 2px; }
-.po-decision .po-text { color: var(--ink); }
+/* A discussion in the channel: a conversation card — its question and state, then its replies. */
+.cn-pins { flex: none; display: flex; gap: 6px; padding: 8px 14px; border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; }
+.cn-pin { flex: none; max-width: 240px; display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--gold) 40%, var(--line)); background: var(--gold-soft); color: var(--ink); font: 500 12px var(--font); cursor: pointer; }
+.cn-pin:hover { border-color: var(--gold); }
+.cn-pin-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); flex: none; }
+.cn-pin-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cn-pin small { color: var(--muted); font-size: 11px; }
+.cn-card { display: grid; gap: 7px; margin-top: 4px; padding: 10px 12px; border: 1px solid var(--line); border-left: 3px solid var(--line-2); border-radius: 10px; background: var(--panel); }
+.cn-conv.is-open .cn-card { border-left-color: var(--gold); }
+.cn-conv.is-decided .cn-card { border-left-color: var(--ok); }
+.cn-card-hd { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; font-size: 11.5px; color: var(--faint); }
+.cn-card-by { display: inline-flex; align-items: center; gap: 4px; }
+.cn-card-ticket { margin-left: auto; }
+.cn-card-title { font-size: 13.5px; line-height: 1.4; overflow-wrap: anywhere; }
+.cn-card-ctx { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.cn-card-ctx.is-open { display: block; }
+.cn-card .th-decision, .cn-card .th-waiting { padding: 6px 8px; font-size: 12px; }
+.cn-replies { display: grid; gap: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+.cn-reply { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 8px; animation: slideIn .3s var(--ease) both; }
+.cn-reply .cn-av, .cn-reply .cn-owner-av { width: 24px; height: 24px; }
+.cn-reply-body { min-width: 0; display: grid; gap: 1px; }
+.cn-reply .cn-meta { font-size: 12px; }
+.cn-reply-text { display: block; font-size: 12.5px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.cn-reply-text.is-clamped { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.cn-more { justify-self: start; display: inline-flex; align-items: center; gap: 8px; padding: 2px 0; border: 0; background: none; color: var(--info); font: 500 12px var(--font); cursor: pointer; }
+.cn-more:hover { text-decoration: underline; }
+.cn-faces { display: inline-flex; }
+.cn-faces > span { margin-left: -6px; border-radius: 50%; box-shadow: 0 0 0 2px var(--panel); }
+.cn-faces > span:first-child { margin-left: 0; }
+.cn-faces .cn-av, .cn-faces .cn-owner-av { width: 20px; height: 20px; pointer-events: none; }
+.cn-faces .av, .cn-faces svg { width: 20px; height: 20px; }
+.cn-card-doc { justify-self: start; display: inline-flex; align-items: center; gap: 5px; padding: 0; border: 0; background: none; color: var(--faint); font: 500 11.5px var(--font); cursor: pointer; }
+.cn-card-doc:hover { color: var(--ink); }
+.channel.is-big .cn-pins { padding: 10px 18px; }
+.channel.is-big .cn-card { padding: 12px 14px; }
+.channel.is-big .cn-reply-text, .channel.is-big .cn-card-ctx { font-size: 13.5px; }
+@media (prefers-reduced-motion: reduce) { .cn-group, .cn-fresh, .cn-wrap, .cn-dialog, .cn-reply { animation: none; } }
 
 @keyframes rise { from { opacity: 0; transform: translateY(10px); } }
 @keyframes slideIn { from { opacity: 0; transform: translateX(-8px); } }

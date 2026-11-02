@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- One channel for the team, as in a Teams channel: the dashboard's Discussions panel is gone and each discussion shows in the team channel as a conversation, where it last moved — who leads it, its state and deadline, its ticket, the question (the thread's `## Context`), the decision or who is still to answer, then its last reply with "N more replies" to open them all. Open discussions are pinned under the channel's header and jump to their conversation. The server now reads a thread's context. Vietnamese labels read more naturally ("Chủ dự án", "Mở rộng", "Sao chép").
 - Team channel posts read like a team chat, not a log: the protocol, the briefs, the agents and `team-communication` ask for one or two plain sentences in the mission's language with its accents, `@id` for whom a post concerns, no opening with one's own id, and the commits, test counts and command output left to the ticket's Log, with before-and-after examples. A ticket moving is not news there unless someone must act on it now.
 
 ## 0.8.0 — 2026-11-01
