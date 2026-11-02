@@ -33,6 +33,11 @@ Fleet members are separate Claude Code sessions (or subagents). None of them see
 
 Rules: address members by their **id** (from `ROSTER.md`), never by role or a session UUID; one subject per message; say what you need back (an answer, a review, nothing); no status JSON, no pleasantries, no "great point!".
 
+A team channel post is read by people too (the owner watches it on the dashboard), so it is a chat message, not a log line: one or two plain sentences in the mission's language, with its accents, `@id` for whom it concerns, and no commit hashes, test counts or lists of ids — those stay in the ticket's Log.
+
+- not `pm: next? tip 34e3e1a7, P-037 8cf3d56f, P-039 34e3e1a7, full checks running`
+- but `@pm P-037 and P-039 are fixed and the full checks are running. What should I take next?`
+
 ## When to speak up — and when not to
 
 Message **at integration points**, not at every step:

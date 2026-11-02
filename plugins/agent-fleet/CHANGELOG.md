@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Team channel posts read like a team chat, not a log: the protocol, the briefs, the agents and `team-communication` ask for one or two plain sentences in the mission's language with its accents, `@id` for whom a post concerns, no opening with one's own id, and the commits, test counts and command output left to the ticket's Log, with before-and-after examples. A ticket moving is not news there unless someone must act on it now.
+
 ## 0.8.0 — 2026-11-01
 
 - A softer logo: the same three-layer arrow with gently curved sides and rounded corners, its layers split along arches like stacked wings, on a rounder tile.

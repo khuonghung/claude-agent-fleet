@@ -45,7 +45,12 @@ Rules: append posts at the end, never edit another member's post; after posting,
 
 - **Post with the fleet CLI**, never by editing the file: `{{sayCmd}}`. It takes the time from the clock and appends one line, so two members posting at once never erase each other.
 - **Read the last lines** between tasks: `tail -n 30 {{boardDir}}/CHANNEL.md`. Answer an `ask` you can answer with an `answer` that names who asked.
-- **Only what everyone needs now.** Work goes in its ticket, a question that needs a decision opens a thread, news for one member is a direct message. No acks, no thanks, no progress reports.
+- **Write it the way you would say it in a team chat**: one or two plain sentences that tell the reader what changed for them and who should do what, in the language of the mission's goal with its proper accents (never mixed with English or stripped of diacritics). Name people as `@id`; never open with your own id, the channel already shows who posted. The evidence — commits, test counts, command output — belongs in the ticket's Log; a ticket id is enough for the reader to open it.
+  - Not: `dev-app tip f2b2fb7d: P-030 fixed e32f1f0a (db-roles one-shot service; api 64/64 files 408/408), P-033 3c784df1. My queue is empty`
+  - But: `@pm P-030 and P-033 are fixed on my branch, all API tests pass. My queue is empty — what next?`
+  - Not: `round 7 merged @ 6f95e6ec: P-008 (dc85ecb4+bab4b537), P-029, DC-002; full checks running (~10 min)`
+  - But: `Round 7 is merged; full checks take about 10 minutes, please hold off on heavy test runs until then.`
+- **Only what everyone needs now.** Work goes in its ticket, a question that needs a decision opens a thread, news for one member is a direct message. No acks, no thanks, no progress reports: a ticket moving to `fixed`, `integrated` or `verified` is already in the ticket and on the dashboard, so post only when someone must act on it now ("@qa2 round 7 is in, P-020 to P-034 are ready to verify").
 - **No doorbell**: posting rings no one. If a member must act, write it in their ticket or thread and message them as usual.
 
 ## Timeline
