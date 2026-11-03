@@ -38,7 +38,9 @@ export function Avatar({ agent, kind, size = "md", cheer }: { agent: AgentDef; k
 export function ModelChip({ agent, t: tele }: { agent: AgentDef; t: Telemetry | null | undefined }) {
   const { t } = useI18n();
   const mismatch = modelMismatch(agent, tele);
-  const planned = modelLabel(agent.model);
+  // A member in another agent CLI: its CLI, and its model when the plan names one (else the CLI's default).
+  const elsewhere = agent.harness && agent.harness !== "claude" ? agent.harness : undefined;
+  const planned = elsewhere ? [elsewhere, agent.model].filter(Boolean).join(" · ") : modelLabel(agent.model);
   return (
     <span className={`model-chip${mismatch ? " is-off" : ""}`} title={mismatch ? t("card.mismatch", mismatch) : agent.model}>
       {mismatch ? `${modelLabel(tele?.model)} ≠ ${planned}` : planned}
