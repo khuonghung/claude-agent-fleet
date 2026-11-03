@@ -6,7 +6,7 @@ Mission goal: {{goal}}
 Your window: {{from}} → {{to}}. Model {{model}}, effort {{effort}}.
 
 Read first: the fleet protocol `{{boardDir}}/README.md` (roles, ticket format, rules, timeline), then the project's CLAUDE.md / AGENTS.md.
-
+{{harnessNote}}
 ## Your duties
 
 {{duties}}
@@ -21,7 +21,7 @@ Read first: the fleet protocol `{{boardDir}}/README.md` (roles, ticket format, r
 
 ## Your skills
 
-Load these with the Skill tool when the work calls for them; they hold the team's way of doing it.
+{{skillsIntro}}
 
 {{skills}}
 

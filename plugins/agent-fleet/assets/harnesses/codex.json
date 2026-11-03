@@ -1,0 +1,34 @@
+{
+  "id": "codex",
+  "title": "OpenAI Codex CLI",
+  "command": "codex",
+  "check": ["--version"],
+  "docs": [
+    "https://learn.chatgpt.com/docs/non-interactive-mode",
+    "https://learn.chatgpt.com/docs/developer-commands?surface=cli",
+    "https://learn.chatgpt.com/docs/config-file/config-reference"
+  ],
+  "notes": "A starting point from the docs, not yet run here: prove it with `fleet harness check codex --live`. `codex exec -` reads the prompt from stdin; the session id is the thread_id of the thread.started event; resume inherits the sandbox of the first turn, so whether it takes --add-dir again is to be checked. workspace-write keeps the network off, which also keeps `git push` from working.",
+  "instructions": "AGENTS.md, read by the CLI itself",
+  "prompt": "stdin",
+  "sessionId": { "key": "thread_id" },
+  "run": [
+    "exec", "--json",
+    "--sandbox", "workspace-write",
+    ["--model", "{model}"],
+    ["-c", "model_reasoning_effort={effort}"],
+    "--add-dir", "{boardDir}",
+    "-"
+  ],
+  "resume": [
+    "exec", "resume", "--json",
+    ["--model", "{model}"],
+    ["-c", "model_reasoning_effort={effort}"],
+    "{sessionId}",
+    "-"
+  ],
+  "output": "jsonl",
+  "efforts": { "low": "low", "medium": "medium", "high": "high", "xhigh": "xhigh", "max": "xhigh" },
+  "usage": { "match": { "type": "turn.completed" }, "output": "usage.output_tokens", "cumulative": false },
+  "reply": { "match": { "type": "item.completed", "item.type": "agent_message" }, "text": "item.text" }
+}

@@ -7,6 +7,7 @@ import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { agentNameOf } from "./board-init.mjs";
+import { commandLine } from "./harness.mjs";
 import { versionNote, PLUGIN_VERSION } from "./plan.mjs";
 
 const git = (dir, ...args) => {
@@ -114,6 +115,20 @@ export async function doctor(fleet, { fleetDir, probe, now = new Date() }) {
   if (fleet.agents.some((a) => a.launch === "headless")) {
     const claude = spawnSync("claude", ["--version"], { encoding: "utf8", shell: process.platform === "win32", windowsHide: true });
     add("claude CLI", claude.status === 0 ? "ok" : "fail", claude.status === 0 ? (claude.stdout ?? "").trim() : "headless members need `claude` on the PATH");
+  }
+  // Members in other agent CLIs: each CLI must run here, and its profile should have passed a live check.
+  for (const id of [...new Set(fleet.agents.filter((a) => a.launch === "runner").map((a) => a.harness))]) {
+    const profile = fleet.harnesses?.[id];
+    if (profile === undefined) {
+      add(`${id} harness`, "fail", `no profile in fleet.json: research it with the onboard-harness skill and run fleet init again`);
+      continue;
+    }
+    const win = process.platform === "win32";
+    const checkArgs = profile.check ?? ["--version"];
+    const r = spawnSync(win ? commandLine(profile.command, checkArgs) : profile.command, win ? [] : checkArgs, { encoding: "utf8", shell: win, windowsHide: true, timeout: 30_000 });
+    const members = fleet.agents.filter((a) => a.harness === id).map((a) => a.id).join(", ");
+    if (r.status !== 0) add(`${id} harness`, "fail", `${profile.command} does not run here (${members} need it): install it and sign in`);
+    else add(`${id} harness`, profile.verified ? "ok" : "warn", `${(r.stdout ?? "").trim().split(/\r?\n/)[0]} for ${members}${profile.verified ? `; profile checked ${profile.verified.at.slice(0, 10)}` : `; the profile was never proven here: run \`fleet harness check ${id} --live\`, then fleet init again`}`);
   }
   const home = path.dirname(fleetDir);
   const current = fs.existsSync(path.join(home, "current")) ? fs.readFileSync(path.join(home, "current"), "utf8").trim() : "";

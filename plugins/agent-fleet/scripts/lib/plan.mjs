@@ -6,6 +6,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { CLAUDE, loadHarness, profileProblems } from "./harness.mjs";
 
 export const PLUGIN_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 export const catalog = JSON.parse(fs.readFileSync(path.join(PLUGIN_ROOT, "assets", "role-catalog.json"), "utf8"));
@@ -150,6 +151,14 @@ export function normalizePlan(input, { cwd = process.cwd(), now = new Date(), le
   plan.transcripts.dirPrefix ??= transcriptFolderOf(plan.repo.dir);
   plan.squads ??= catalog.squads;
   plan.probes ??= [];
+  // Profiles of the other agent CLIs members run in, copied into the fleet so it keeps working if a file changes.
+  plan.harnesses ??= {};
+  const profileOf = (id) => {
+    const found = loadHarness(id, plan.repo.dir);
+    if (found === undefined) return undefined;
+    const { file, source, ...profile } = found;
+    return profile;
+  };
 
   const agents = (plan.agents ??= []);
   if (agents.length === 0) problems.push("the plan has no agents");
@@ -164,9 +173,19 @@ export function normalizePlan(input, { cwd = process.cwd(), now = new Date(), le
     agent.name ??= agent.id;
     agent.title ??= role?.title ?? agent.role;
     agent.squad ??= role?.squad ?? "build";
-    agent.model ??= role?.model ?? "sonnet";
+    // A member in another agent CLI: its runner starts it from the profile, with that CLI's models.
+    agent.harness ??= CLAUDE;
+    const other = agent.harness !== CLAUDE;
+    const profile = other ? (plan.harnesses[agent.harness] ??= profileOf(agent.harness)) : undefined;
+    if (other) {
+      if (profile === undefined) problems.push(`${where}: there is no profile for harness ${agent.harness}: research it with the onboard-harness skill (\`fleet harness list\` shows the profiles there are)`);
+      else for (const p of profileProblems(profile)) problems.push(`${where}: harness ${agent.harness}: ${p}`);
+      if (role?.launch === "self" || agent.launch === "self") problems.push(`${where}: the lead is this session, which runs in Claude Code`);
+      else if (agent.launch !== undefined && agent.launch !== "runner") problems.push(`${where}: a member in ${agent.harness} runs with launch runner, not ${agent.launch}`);
+    }
+    agent.model ??= other ? (profile?.model ?? "") : (role?.model ?? "sonnet");
     agent.effort ??= role?.effort ?? "medium";
-    agent.launch ??= role?.launch === "self" ? "self" : plan.launch;
+    agent.launch ??= role?.launch === "self" ? "self" : other ? "runner" : plan.launch;
     agent.worktree ??= role?.worktree ?? false;
     agent.readOnly ??= role?.readOnly ?? false;
     agent.duties ??= role?.duties ?? "";
@@ -175,7 +194,7 @@ export function normalizePlan(input, { cwd = process.cwd(), now = new Date(), le
     agent.specialty ??= "";
     agent.owns ??= [];
     agent.mascot ??= role?.mascot;
-    if (!(agent.model in catalog.models) && !/^claude-/.test(agent.model)) problems.push(`${where}: model ${agent.model} is not opus, sonnet, haiku, inherit or a claude-* id`);
+    if (!other && !(agent.model in catalog.models) && !/^claude-/.test(agent.model)) problems.push(`${where}: model ${agent.model} is not opus, sonnet, haiku, inherit or a claude-* id`);
     if (!catalog.efforts.includes(agent.effort)) problems.push(`${where}: effort must be one of ${catalog.efforts.join(", ")}`);
     if (!plan.squads.some((squad) => squad.id === agent.squad)) problems.push(`${where}: squad ${agent.squad} is not in squads`);
     // How the dashboard finds the member's transcript: a session by its title, a subagent by its description.

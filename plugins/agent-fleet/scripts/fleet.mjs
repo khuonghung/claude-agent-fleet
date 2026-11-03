@@ -27,14 +27,22 @@
 //   fleet dashboard [--port N] [--json] starts the dashboard for the current fleet (or says where it runs) and prints its URL
 //   fleet stop                        stops the dashboard
 //   fleet status [--json]             tickets, members, time left, output tokens against the limit, members to clear
-//   fleet spawn <member>              starts a member as a headless `claude -p` process (launch: headless)
+//   fleet spawn <member>              starts a member as a headless `claude -p` process (launch: headless), or the
+//                                     runner of a member in another agent CLI (launch: runner)
+//   fleet run <member>                the runner itself: drives a member in another CLI turn by turn until its window ends
+//   fleet halt <member>…|all [--now]  stops runners after their current turn (--now: at once, the CLI too)
+//   fleet harness list [--json]       the profiles of other agent CLIs within reach: this project's, the plugin's starting points
+//   fleet harness show <id>           one profile (JSON)
+//   fleet harness check <id|file> [--live] [--model m] [--effort e]
+//                                     checks a profile; --live runs two short turns (start, resume) and shows what came out
 
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import http from "node:http";
 import net from "node:net";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { branchOf, CHANNEL_HEAD, hhmm, launchPlan, writeAgents, writeBoard } from "./lib/board-init.mjs";
 import { CARRY, carryTickets, clonePlan, renameIntegration } from "./lib/clone.mjs";
 import { doctor } from "./lib/doctor.mjs";
@@ -44,6 +52,8 @@ import { listTickets, moveTicket, STATUSES } from "./lib/tickets.mjs";
 import { estimateFleet, memberEstimate } from "./lib/estimate.mjs";
 import { addToPlan, budgetState, catalog, contextState, extendPlan, modelId, normalizePlan, PLUGIN_ROOT, PLUGIN_VERSION, readFleet, versionNote } from "./lib/plan.mjs";
 import { normStatus, parseRoster } from "./server/board.mjs";
+import { CLAUDE, commandLine, killTree, listHarnesses, loadHarness, profileProblems } from "./lib/harness.mjs";
+import { checkLive, runMember, runnerFiles, setRoster } from "./lib/runner.mjs";
 import { recordSession, resumeNote } from "./lib/sessions.mjs";
 import { createTranscripts } from "./server/transcripts.mjs";
 
@@ -84,6 +94,14 @@ function warnIfOlder(file) {
     // An unreadable fleet.json fails where it is read.
   }
   return file;
+}
+
+/** Runs a program to read its version: { ok, text } (its first output line, or why it did not run). */
+function spawnSyncText(command, commandArgs) {
+  const win = process.platform === "win32";
+  const r = spawnSync(win ? commandLine(command, commandArgs) : command, win ? [] : commandArgs, { encoding: "utf8", shell: win, windowsHide: true, timeout: 30_000 });
+  const text = `${r.stdout ?? ""}${r.stderr ?? ""}`.trim().split(/\r?\n/)[0] ?? "";
+  return { ok: r.status === 0, text: r.status === 0 ? text : (r.error?.message ?? (text || `exit ${r.status}`)) };
 }
 
 const leadOf = () => {
@@ -488,19 +506,7 @@ switch (command) {
     const fleet = readFleet(currentFleetFile());
     // `--fleet <dir>` may come anywhere: the rest is the member and its key=value pairs.
     const [id, ...pairs] = args.filter((a, i) => a !== "--fleet" && args[i - 1] !== "--fleet");
-    const file = path.join(fleet.board.dir, "ROSTER.md");
-    const columns = { session: 3, worktree: 4, branch: 5 };
-    const lines = fs.readFileSync(file, "utf8").split(/\r?\n/).map((line) => {
-      const cells = line.split("|");
-      if (cells[1]?.trim() !== id) return line;
-      for (const pair of pairs) {
-        const [key, ...rest] = pair.split("=");
-        const at = columns[key];
-        if (at !== undefined) cells[at] = ` ${rest.join("=")} `;
-      }
-      return cells.join("|");
-    });
-    fs.writeFileSync(file, lines.join("\n"));
+    setRoster(fleet.board.dir, id, Object.fromEntries(pairs.map((pair) => [pair.split("=")[0], pair.split("=").slice(1).join("=")])));
     out(`roster: ${id} updated`);
     break;
   }
@@ -634,10 +640,17 @@ switch (command) {
     const fleet = readFleet(fleetFile);
     const agent = fleet.agents.find((a) => a.id === args[0]);
     if (agent === undefined) fail(`No member ${args[0]}`);
-    const brief = fs.readFileSync(path.join(fleet.board.dir, "briefs", `${agent.id}.md`), "utf8");
     const logDir = path.join(path.dirname(fleetFile), "logs");
     fs.mkdirSync(logDir, { recursive: true });
     const log = fs.openSync(path.join(logDir, `${agent.id}.log`), "a");
+    if (agent.harness !== undefined && agent.harness !== CLAUDE) {
+      // A member in another CLI: its runner starts it, wakes it on board changes and records its turns.
+      const runner = spawn(process.execPath, [fileURLToPath(import.meta.url), "run", agent.id, "--fleet", path.dirname(fleetFile)], { cwd: fleet.repo.dir, detached: true, stdio: ["ignore", log, log], windowsHide: true });
+      runner.unref();
+      out({ member: agent.id, harness: agent.harness, runner: runner.pid, log: path.join(logDir, `${agent.id}.log`), state: runnerFiles(path.dirname(fleetFile), agent.id).state });
+      break;
+    }
+    const brief = fs.readFileSync(path.join(fleet.board.dir, "briefs", `${agent.id}.md`), "utf8");
     // A session id chosen here names the transcript file, so the dashboard finds it without guessing.
     const sessionId = randomUUID();
     // The brief goes in on stdin: a multi-line argument does not survive the Windows shell that starts claude.cmd.
@@ -662,6 +675,84 @@ switch (command) {
     agent.match.sessionId = sessionId;
     fs.writeFileSync(fleetFile, `${JSON.stringify(fleet, null, 2)}\n`);
     out({ member: agent.id, pid: child.pid, sessionId, log: path.join(logDir, `${agent.id}.log`) });
+    break;
+  }
+
+  case "run": {
+    const fleetFile = currentFleetFile();
+    const id = args.find((a, i) => !a.startsWith("--") && args[i - 1] !== "--fleet");
+    if (id === undefined) fail("usage: fleet run <member>");
+    const stamp = () => new Date().toISOString();
+    process.stdout.write(`${stamp()} runner of ${id} started (pid ${process.pid})\n`);
+    try {
+      const state = await runMember(fleetFile, id, { log: process.stdout });
+      process.stdout.write(`\n${stamp()} runner of ${id} ${state.phase === "failed" ? "gave up" : "stopped"} after ${state.turn ?? 0} turn(s)\n`);
+    } catch (error) {
+      fail(`${stamp()} runner of ${id}: ${error.message}`);
+    }
+    break;
+  }
+
+  case "halt": {
+    const fleetFile = currentFleetFile();
+    const fleet = readFleet(fleetFile);
+    const named = args.filter((a, i) => !a.startsWith("--") && args[i - 1] !== "--fleet");
+    const runners = fleet.agents.filter((a) => a.launch === "runner");
+    const picked = named.includes("all") ? runners : runners.filter((a) => named.includes(a.id));
+    if (picked.length === 0) fail(`No runner to halt; members with a runner: ${runners.map((a) => a.id).join(", ") || "none"}`);
+    const halted = picked.map((a) => {
+      const files = runnerFiles(path.dirname(fleetFile), a.id);
+      fs.mkdirSync(files.dir, { recursive: true });
+      fs.writeFileSync(files.stop, `${new Date().toISOString()}\n`);
+      if (args.includes("--now")) {
+        const state = JSON.parse(fs.existsSync(files.state) ? fs.readFileSync(files.state, "utf8") : "{}");
+        killTree(state.child);
+        killTree(state.pid);
+      }
+      return a.id;
+    });
+    out({ halted, when: args.includes("--now") ? "now" : "after the current turn" });
+    break;
+  }
+
+  case "harness": {
+    const [sub, target] = args.filter((a, i) => !a.startsWith("--") && !["--model", "--effort", "--fleet"].includes(args[i - 1]));
+    const home = fleetHome();
+    const repoDir = home === undefined ? process.cwd() : path.dirname(home);
+    if (sub === "list" || sub === undefined) {
+      const list = listHarnesses(repoDir).map(({ profile, ...h }) => h);
+      if (args.includes("--json")) out(list);
+      else out(list.length ? list.map((h) => `${h.id.padEnd(10)} ${h.title} · ${h.source}${h.verified ? ` · checked ${h.verified.at?.slice(0, 10)} (${h.verified.version})` : " · not checked here"}${h.error ? ` · unreadable: ${h.error}` : ""}`).join("\n") : "No harness profiles yet: research one with the onboard-harness skill.");
+      break;
+    }
+    if (target === undefined) fail(`usage: fleet harness ${sub} <id|file>`);
+    const profile = loadHarness(target, repoDir);
+    if (profile === undefined) fail(`No profile ${target}: \`fleet harness list\` shows the ones there are; the onboard-harness skill writes a new one to .fleet/harnesses/<id>.json`);
+    if (sub === "show") {
+      out(profile);
+      break;
+    }
+    if (sub !== "check") fail(`unknown: fleet harness ${sub} (list, show, check)`);
+    const { file, source, ...bare } = profile;
+    const problems = profileProblems(bare);
+    const version = spawnSyncText(profile.command, profile.check ?? ["--version"]);
+    const report = { id: profile.id, file, problems, command: version.ok ? `${profile.command}: ${version.text}` : `${profile.command} did not run (${version.text}): install it and sign in first` };
+    if (problems.length || !version.ok || !args.includes("--live")) {
+      out(report);
+      if (problems.length || !version.ok) process.exitCode = 1;
+      break;
+    }
+    const live = await checkLive(bare, { cwd: repoDir, model: flag("model", bare.model ?? ""), effort: flag("effort", "") });
+    if (live.ok) {
+      // A profile that worked here is kept with the project, stamped with the version it worked with.
+      const verified = { ...bare, verified: { at: new Date().toISOString(), version: version.text } };
+      const dest = path.join(repoDir, ".fleet", "harnesses", `${bare.id}.json`);
+      fs.mkdirSync(path.dirname(dest), { recursive: true });
+      fs.writeFileSync(dest, `${JSON.stringify(verified, null, 2)}\n`);
+      report.saved = dest;
+    }
+    out({ ...report, ...live });
+    if (!live.ok) process.exitCode = 1;
     break;
   }
 

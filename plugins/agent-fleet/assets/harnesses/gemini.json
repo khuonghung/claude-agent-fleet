@@ -1,0 +1,31 @@
+{
+  "id": "gemini",
+  "title": "Gemini CLI",
+  "command": "gemini",
+  "check": ["--version"],
+  "docs": [
+    "https://geminicli.com/docs/cli/headless/",
+    "https://geminicli.com/docs/cli/session-management/",
+    "https://geminicli.com/docs/cli/cli-reference/"
+  ],
+  "notes": "A starting point from the docs, not yet run here: prove it with `fleet harness check gemini --live`, and fill `usage` from the result event it prints (the docs say it carries per-model token counts, not their field names). Piped stdin runs headless; the session id is in the init event. The docs say Gemini CLI was replaced by Antigravity CLI on 18 June 2026 for unpaid and Google One accounts. It has no reasoning-effort flag.",
+  "instructions": "GEMINI.md (set context.fileName to read AGENTS.md too)",
+  "prompt": "stdin",
+  "sessionId": { "key": "session_id" },
+  "run": [
+    "--output-format", "stream-json",
+    ["--model", "{model}"],
+    "--approval-mode", "yolo",
+    "--include-directories", "{boardDir}"
+  ],
+  "resume": [
+    "--resume", "{sessionId}",
+    "--output-format", "stream-json",
+    ["--model", "{model}"],
+    "--approval-mode", "yolo",
+    "--include-directories", "{boardDir}"
+  ],
+  "output": "jsonl",
+  "efforts": {},
+  "reply": { "match": { "type": "message", "role": "assistant" }, "text": "content" }
+}

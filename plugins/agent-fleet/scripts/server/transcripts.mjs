@@ -231,6 +231,9 @@ export function createTranscripts(cfg, { sessionNames, fleetDir }) {
         }
       }
     }
+    // A member in another agent CLI: its runner writes each turn to `runner/<id>.jsonl` in the same shape.
+    const runnerFile = (agent) => (fleetDir ? path.join(fleetDir, "runner", `${agent.id}.jsonl`) : undefined);
+    for (const agent of cfg.agents.filter((a) => a.launch === "runner" && runnerFile(a))) await add(runnerFile(agent), { sessionId: `runner-${agent.id}` });
     const same = (a, b) => path.resolve(a).toLowerCase() === path.resolve(b).toLowerCase();
     const recorded = fleetDir ? sessionsOf(fleetDir) : {};
     // A member taken out of the plan is no longer followed.
@@ -240,6 +243,10 @@ export function createTranscripts(cfg, { sessionNames, fleetDir }) {
       const mine = recorded[agent.id] ?? [];
       const hits = [];
       for (const c of candidates) {
+        if (agent.launch === "runner") {
+          if (same(c.file, runnerFile(agent))) hits.push(c);
+          continue;
+        }
         let hit = mine.some((r) => (r.transcriptPath && same(c.file, r.transcriptPath)) || (r.sessionId && !c.subagent && c.sessionId === r.sessionId));
         if (hit) {
           // Recorded by the hook: this member's, whatever its title.
