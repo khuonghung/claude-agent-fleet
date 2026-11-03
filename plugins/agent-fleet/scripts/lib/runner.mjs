@@ -299,7 +299,9 @@ export async function checkLive(profile, { cwd, model = "", effort = "" } = {}) 
     }
     turns.push({ command: [profile.command, ...args].join(" "), code: result.code, seconds: Math.round((Date.now() - started) / 100) / 10, sessionId: i === 0 ? sessionId || null : undefined, outputTokens: outputTokens ?? null, reply: turn.reply.slice(0, 200), types: turn.types, samples, stderr: String(result.stderr).trim().split(/\r?\n/).slice(-5).join("\n") });
     if (result.code !== 0) {
-      problems.push(`turn ${i + 1} exited with ${result.code}`);
+      // The CLI's own words say why (not signed in, an unknown flag): the first line it wrote to stderr.
+      const why = String(result.stderr).split(/\r?\n/).map((l) => l.trim()).find(Boolean);
+      problems.push(`turn ${i + 1} exited with ${result.code}${why ? `: ${why}` : ""}`);
       break;
     }
     if (i === 0 && !sessionId) {

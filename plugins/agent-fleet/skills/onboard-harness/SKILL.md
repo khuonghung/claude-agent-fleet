@@ -114,6 +114,7 @@ A member that runs there gets `"harness": "<id>"`. Its `"model"` is the CLI's ow
 
 | Symptom | Likely cause |
 |---|---|
+| Turn 1 exits at once asking to authenticate | the CLI is not signed in on this machine (signing in through an editor extension does not count): the user signs in themselves, in a terminal (`copilot` then `/login`, `codex login`, …), then check again |
 | The turn waits forever | a permission prompt or a question: add the CLI's auto-approve or no-ask flag; check that it reads stdin when it is not a terminal |
 | `no session id` | the field is named otherwise: look at the `samples` of the first event |
 | The resume starts a fresh session | the resume arguments or the id format: try the CLI's resume subcommand rather than a flag |
