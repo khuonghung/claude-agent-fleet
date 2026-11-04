@@ -13,7 +13,7 @@ Launch the current agent fleet. The fleet CLI is `node "${CLAUDE_PLUGIN_ROOT}/sc
    - **`subagent`**: use the Agent tool with `subagent_type` = `subagentType` (the member's generated agent), `description` = the entry's `description` exactly (the dashboard finds the member by it), `prompt` = the full brief text, `run_in_background: true`, and `model` = the model alias when it is not `inherit`. Project agents are loaded when a session starts: if `subagentType` is not available yet in this session, use `general-purpose` with the content of `agentFile` (without its front matter) followed by the brief as the prompt. (When the user asked for a workflow, run the `launch-fleet` workflow of this plugin with the entries instead.)
    - **`headless`**: run `fleet spawn <id>`. Ask the user first which permission mode the headless members may use (they cannot answer prompts), and pass it as `--permission-mode <mode>`.
 4. Run `fleet dashboard` (it reuses a running one) and give the user the URL as a link they can click, on a line of its own — `Dashboard: [http://localhost:4600](http://localhost:4600)` with the port it printed — never only the port number; open it in the browser pane when you have one.
-5. Offer to keep the fleet moving while the user is away: a recurring check every ~20 minutes (CronCreate, at an off-minute) that runs `fleet status --json` and `fleet dashboard` (it reuses a running dashboard, and brings back one that died with a session on the port it had), reads `BOARD.md` and the tickets, wakes idle members with concrete work (SendMessage to their session id), rings again for inbox messages left unread over 10 minutes (`inbox` in the status: SendMessage "inbox #<n>" to that member), keeps the token limit and the members' context lean (below), and at the end time runs `/agent-fleet:wrap-up` — the end read from `fleet status` on each check, never fixed when the check is set up, since `/agent-fleet:extend` may move it. Only set it up on a yes. With a token limit, say that without this check the limit is only kept, and desktop members only cleared, when you are asked for status.
+5. Offer to keep the fleet moving while the user is away: a recurring check every ~20 minutes (CronCreate, at an off-minute) that runs `fleet status --json` and `fleet dashboard` (it reuses a running dashboard, and brings back one that died with a session on the port it had), reads `BOARD.md` and the tickets, wakes idle members with concrete work (SendMessage to their session id), rings again for inbox messages left unread over 10 minutes (`inbox` in the status: SendMessage "inbox #<n>" to that member), keeps the token limit and the members' context lean and switches their effort per ticket (below), and at the end time runs `/agent-fleet:wrap-up` — the end read from `fleet status` on each check, never fixed when the check is set up, since `/agent-fleet:extend` may move it. Only set it up on a yes. With a token limit, say that without this check the limit is only kept, and desktop members only cleared, when you are asked for status.
 
 ## Keeping context lean
 
@@ -25,6 +25,16 @@ Every model call re-reads a member's whole context, so a member that carries 150
   2. Wake it: SendMessage to the same session id with the output of `fleet resume <id>` as the message, unchanged. Its first line, `Fleet member: <slug>/<id>`, lets the hook tie the new transcript to the member, so the dashboard keeps following it and its tokens still count toward the limit.
   
   The protocol tells members to keep each ticket's Log current before they end a turn, so a clear loses nothing. A member with a ticket `in-progress` (`context.members[].inProgress`) is cleared too: its Log is where it picks the work back up.
+
+## Keeping effort right
+
+A member keeps its model for the whole fleet, but with `autoEffort` (on for new plans) it works each ticket at the effort the ticket needs: the ticket's `Effort:` when the product owner or delivery lead set one (`--effort` on `fleet ticket set`), else its severity around the member's planned effort — critical one step up, high at the plan, medium one down, low two down, never below `low`. A member cannot change its own effort; you do, for desktop sessions. `fleet status --json` returns `effort.switch`: desktop members whose in-progress ticket wants another effort than the one they run at. On every check, for each one:
+
+1. When it is also in `context.clear`, clear it first (above): a cleared session starts with an empty context, so the switch costs nothing.
+2. `set_session_effort` with its session id from `ROSTER.md` and the `to` effort (it applies from its next turn; the app may ask the user for an effort above your own).
+3. Record it: `fleet effort <id> <to> --ticket <ticket>`, so the next check compares against it.
+
+Switch only at a ticket's start, never in the middle of one: the effort is part of what the API caches, so a member's next call after a switch writes its whole context to the cache once (about 12 times what reading it from the cache costs, for that one call). Subagents and headless members keep their planned effort.
 
 ## Keeping the token limit
 

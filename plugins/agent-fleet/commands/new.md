@@ -47,6 +47,8 @@ Suggest a model and effort per member as a table — member, model by full name 
 
 Write the candidate plan to `.fleet/plan.json` and run `fleet estimate .fleet/plan.json`: it gives each member's expected output tokens from rates measured on real fleets (Opus at high effort about 100k per active hour, Sonnet coordinating about 25k) and the total range. Show those numbers beside each option, so the choice is concrete.
 
+A member keeps its model while it runs, but its effort follows each ticket (`autoEffort`, on by default: the ticket's `Effort:`, else its severity, around the planned effort — see `/agent-fleet:launch`), so the planned effort is the member's usual level, not its only one. A member may be planned as `"model": "auto"` and `"effort": "auto"`: the role's effort, and the role's model (Claude Opus 5.5 at `xhigh` or `max`). Say so beside the table; set `"autoEffort": false` in the plan only when the user wants fixed efforts.
+
 Offer the user, in one question: **use the suggestion**, **all Opus** (strongest), **economy** (Sonnet everywhere but builders), or **edit per member** — each with its estimated total. Say that parallel members share one usage limit, and that reaching it pauses the whole fleet.
 
 ## 6. Time and budget

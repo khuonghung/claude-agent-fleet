@@ -6,6 +6,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { autoModel } from "./effort.mjs";
 
 export const PLUGIN_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 export const catalog = JSON.parse(fs.readFileSync(path.join(PLUGIN_ROOT, "assets", "role-catalog.json"), "utf8"));
@@ -139,6 +140,10 @@ export function normalizePlan(input, { cwd = process.cwd(), now = new Date(), le
   plan.context.compactAt ??= COMPACT_AT;
   const at = plan.context.compactAt;
   if (!(at === 0 || (Number.isInteger(at) && at >= 100_000 && at <= 1_000_000))) problems.push(`context.compactAt must be a number of tokens from 100000 to 1000000, or 0 to turn it off, not ${at}`);
+  // Auto effort: each desktop member works a ticket at the effort the ticket needs (its Effort, else its severity,
+  // around the member's planned effort); the lead switches it. The model never changes while a member runs.
+  plan.autoEffort ??= true;
+  if (typeof plan.autoEffort !== "boolean") problems.push(`autoEffort must be true or false, not ${plan.autoEffort}`);
   plan.privacy ??= { readText: true };
   plan.board ??= {};
   plan.board.dir = path.resolve(cwd, plan.board.dir ?? path.join(".fleet", mission.slug, "board"));
@@ -164,8 +169,10 @@ export function normalizePlan(input, { cwd = process.cwd(), now = new Date(), le
     agent.name ??= agent.id;
     agent.title ??= role?.title ?? agent.role;
     agent.squad ??= role?.squad ?? "build";
+    // "auto": the role's effort, and a model that fits the role and that effort (see autoModel).
+    if (agent.effort === undefined || agent.effort === "auto") agent.effort = role?.effort ?? "medium";
+    if (agent.model === "auto") agent.model = autoModel(role?.model, agent.effort);
     agent.model ??= role?.model ?? "sonnet";
-    agent.effort ??= role?.effort ?? "medium";
     agent.launch ??= role?.launch === "self" ? "self" : plan.launch;
     agent.worktree ??= role?.worktree ?? false;
     agent.readOnly ??= role?.readOnly ?? false;

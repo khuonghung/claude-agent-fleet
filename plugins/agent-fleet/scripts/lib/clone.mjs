@@ -33,6 +33,7 @@ export function clonePlan(source, { name, goal, hours, now = new Date() }) {
     launch: source.launch,
     budget: structuredClone(source.budget ?? {}),
     context: structuredClone(source.context ?? {}),
+    ...(source.autoEffort === undefined ? {} : { autoEffort: source.autoEffort }),
     privacy: structuredClone(source.privacy ?? {}),
     port: source.port,
     agents,

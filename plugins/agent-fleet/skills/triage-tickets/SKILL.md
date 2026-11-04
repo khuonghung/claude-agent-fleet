@@ -12,6 +12,7 @@ Triage turns a pile of findings into a ranked queue the builders can trust. Do i
 1. **Read it and try the repro** if it is cheap (under 2 minutes). A ticket without a reproducible problem goes back to its author with a question in the Log, status stays `new`.
 2. **Duplicates**: grep `tickets/` for the same path and symptom. Keep the clearest one, set the others to `duplicate` with `Decision: duplicate of <ID>` and copy anything they add into the kept ticket's Log.
 3. **Severity**: apply the scale from `write-ticket`; change it if the author over- or under-rated it and say why in the Log.
+   **Effort** (optional): the severity sets the effort its owner works it at (critical one step above the owner's planned effort, high at it, medium one below, low two below). When the work is harder or easier than its severity says — a low-severity race condition, a critical one-line config fix — set it with `--effort <level>` on the move and say why in the Log.
 4. **Acceptance criteria**: make sure there are 2–5 testable ones; add or sharpen them now — builders and testers work from them.
 5. **Decision**, with one line of why:
    - `do now` — in the goal, and it fits the time left;

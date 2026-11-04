@@ -17,7 +17,8 @@
 //   fleet brief <member>              prints a member's brief
 //   fleet resume <member>             prints the note that restarts a member cleared to save tokens
 //   fleet roster <member> <key=value> records a member's session id, worktree or branch in ROSTER.md
-//   fleet ticket set <ID> <status> --by <member> [--note …] [--fix …] [--owner …] [--verifier …] [--decision …] [--force]
+//   fleet effort <member> <level> [--ticket <ID>]  records the effort the lead switched a member to (auto effort)
+//   fleet ticket set <ID> <status> --by <member> [--note …] [--fix …] [--owner …] [--verifier …] [--decision …] [--effort …] [--force]
 //                                     moves a ticket as the protocol allows (who, which step, what evidence) and logs it
 //   fleet ticket list [--status s,s] [--owner <member>] [--json]   the board's tickets, one a line
 //   fleet send <member> <to>[,<to>…|all] <text>  a direct message that waits in each recipient's inbox until acknowledged
@@ -40,7 +41,8 @@ import { CARRY, carryTickets, clonePlan, renameIntegration } from "./lib/clone.m
 import { doctor } from "./lib/doctor.mjs";
 import { formatPlan, integrationPlan } from "./lib/integrate.mjs";
 import { ack, messagesOf, send, unreadState } from "./lib/inbox.mjs";
-import { listTickets, moveTicket, STATUSES } from "./lib/tickets.mjs";
+import { fieldOf, listTickets, moveTicket, STATUSES } from "./lib/tickets.mjs";
+import { EFFORTS, effortState, recordEffort, ticketEffort } from "./lib/effort.mjs";
 import { estimateFleet, memberEstimate } from "./lib/estimate.mjs";
 import { addToPlan, budgetState, catalog, contextState, extendPlan, modelId, normalizePlan, PLUGIN_ROOT, PLUGIN_VERSION, readFleet, versionNote } from "./lib/plan.mjs";
 import { normStatus, parseRoster } from "./server/board.mjs";
@@ -363,7 +365,7 @@ switch (command) {
   case "ticket": {
     const fleet = readFleet(currentFleetFile());
     // The words that are not a flag or a flag's value: `ticket set <ID> <status>`, `ticket list`.
-    const valued = new Set(["--by", "--note", "--fix", "--owner", "--verifier", "--decision", "--fleet", "--status"]);
+    const valued = new Set(["--by", "--note", "--fix", "--owner", "--verifier", "--decision", "--effort", "--fleet", "--status"]);
     const [sub, id, to] = args.filter((a, i) => !a.startsWith("--") && !valued.has(args[i - 1]));
     if (sub === "list") {
       const status = flag("status");
@@ -374,7 +376,7 @@ switch (command) {
       break;
     }
     if (sub !== "set" || id === undefined || to === undefined || flag("by") === undefined) {
-      fail(`usage: fleet ticket set <ID> <status> --by <your id> [--note "<evidence>"] [--fix "<branch> @ <sha>"] [--owner <id>] [--verifier <id>] [--decision "<why>"] [--force]\n       fleet ticket list [--status s,s] [--owner <id>] [--json]\nstatuses: ${STATUSES.join(", ")}`);
+      fail(`usage: fleet ticket set <ID> <status> --by <your id> [--note "<evidence>"] [--fix "<branch> @ <sha>"] [--owner <id>] [--verifier <id>] [--decision "<why>"] [--effort low|medium|high|xhigh|max] [--force]\n       fleet ticket list [--status s,s] [--owner <id>] [--json]\nstatuses: ${STATUSES.join(", ")}`);
     }
     const file = path.join(fleet.board.dir, "tickets", `${id}.md`);
     if (!/^[A-Za-z0-9._-]+$/.test(id) || !fs.existsSync(file)) fail(`No ticket ${id} on the board (${path.join(fleet.board.dir, "tickets")})`);
@@ -388,12 +390,17 @@ switch (command) {
       owner: flag("owner"),
       verifier: flag("verifier"),
       decision: flag("decision"),
+      effort: flag("effort"),
     });
     if (result.problems.length > 0) fail([`${id} stays ${result.from}:`, ...result.problems.map((p) => `- ${p}`), "A move the protocol does not allow: ask the lead (it may pass --force)."].join("\n"));
     // One ticket in progress per member: a second one is allowed, but said.
     const busy = normStatus(to) === "in-progress" ? listTickets(fleet.board.dir).filter((t) => t.id !== id && t.status === "in-progress" && t.owner.split(/[,\s]+/).includes(by)).map((t) => t.id) : [];
     fs.writeFileSync(file, result.text);
-    out({ ticket: id, from: result.from, to: normStatus(to), ...(busy.length > 0 ? { warning: `${by} has ${busy.join(", ")} in progress too: one at a time` } : {}) });
+    // Auto effort: the effort the owner works this ticket at, which the lead's next check switches a desktop member to.
+    const ownerId = /^[a-z][a-z0-9-]*/.exec(fieldOf(result.text, "Owner").replace(/[`*@]/g, ""))?.[0];
+    const owner = fleet.agents.find((a) => a.id === ownerId);
+    const effort = fleet.autoEffort && owner && ["assigned", "in-progress"].includes(normStatus(to)) ? { member: owner.id, ...ticketEffort(result.text, owner.effort) } : undefined;
+    out({ ticket: id, from: result.from, to: normStatus(to), ...(effort ? { effort } : {}), ...(busy.length > 0 ? { warning: `${by} has ${busy.join(", ")} in progress too: one at a time` } : {}) });
     break;
   }
 
@@ -505,6 +512,18 @@ switch (command) {
     break;
   }
 
+  case "effort": {
+    // The lead switched a member's effort (set_session_effort): record it, so the next check compares against it.
+    const fleetFile = currentFleetFile();
+    const fleet = readFleet(fleetFile);
+    const [id, level] = args.filter((a, i) => !a.startsWith("--") && !["--fleet", "--ticket"].includes(args[i - 1]));
+    if (!fleet.agents.some((a) => a.id === id)) fail(`No member ${id}; members: ${fleet.agents.map((a) => a.id).join(", ")}`);
+    if (!EFFORTS.includes(level)) fail(`usage: fleet effort <member> <${EFFORTS.join(" | ")}> [--ticket <ID>]`);
+    recordEffort(path.dirname(fleetFile), id, level, { ticket: flag("ticket") });
+    out(`effort: ${id} runs at ${level}`);
+    break;
+  }
+
   case "say": {
     const fleet = readFleet(currentFleetFile());
     const [id, kind, ...words] = args.filter((a, i) => a !== "--fleet" && args[i - 1] !== "--fleet");
@@ -601,13 +620,17 @@ switch (command) {
     const tickets = fs.existsSync(ticketsDir) ? fs.readdirSync(ticketsDir).filter((f) => f.endsWith(".md")) : [];
     const statuses = {};
     const inProgress = {};
+    const working = {};
     for (const file of tickets) {
       const text = fs.readFileSync(path.join(ticketsDir, file), "utf8");
       // Read as the dashboard reads it: "In progress" is in-progress, not "In".
       const status = normStatus(/^[ \t]*-[ \t]*Status:[ \t]*(.*)$/im.exec(text)?.[1] ?? "");
       statuses[status] = (statuses[status] ?? 0) + 1;
       const owner = /^[ \t]*-[ \t]*Owner:[ \t]*([a-z][a-z0-9-]*)/im.exec(text)?.[1];
-      if (status === "in-progress" && owner) (inProgress[owner] ??= []).push(file.replace(/\.md$/, ""));
+      if (status === "in-progress" && owner) {
+        (inProgress[owner] ??= []).push(file.replace(/\.md$/, ""));
+        (working[owner] ??= []).push({ id: file.replace(/\.md$/, ""), text });
+      }
     }
     const left = Math.max(0, Math.round((Date.parse(fleet.mission.endAt) - Date.now()) / 60_000));
     // Output tokens read from the members' transcripts, the way the dashboard counts them (each message once).
@@ -618,13 +641,14 @@ switch (command) {
     const used = Object.values(telemetry).reduce((n, t) => n + (t?.outputTokens ?? 0), 0);
     const budget = budgetState(fleet.budget, used);
     const context = contextState(fleet, telemetry, { inProgress });
-    const status = { mission: fleet.mission.name, goal: fleet.mission.goal, minutesLeft: left, members: fleet.agents.length, tickets: tickets.length, statuses, budget, context, inbox: unreadState(fleet) };
+    const effort = effortState(fleet, path.dirname(fleetFile), working);
+    const status = { mission: fleet.mission.name, goal: fleet.mission.goal, minutesLeft: left, members: fleet.agents.length, tickets: tickets.length, statuses, budget, context, effort, inbox: unreadState(fleet) };
     const k = (n) => `${Math.round(n / 1000)}k`;
     const tokens = budget.state === "none" ? `${k(used)} output tokens (no limit)` : `${k(used)} / ${k(budget.limit)} output tokens (${Math.round(budget.share * 100)}%, ${budget.state}; at the limit: ${budget.onLimit})`;
     if (args.includes("--json")) out(status);
     else {
       const heavy = context.clear.map((id) => `${id} ${k(context.members.find((m) => m.id === id).tokens)}`);
-      out(`${status.mission}: ${left} min left · ${status.members} members · ${status.tickets} tickets · ${Object.entries(statuses).map(([key, v]) => `${key} ${v}`).join(", ") || "none yet"} · ${tokens}${heavy.length ? ` · to clear (idle, context over ${k(context.compactAt)}): ${heavy.join(", ")}` : ""}${Object.keys(status.inbox).length ? ` · unread: ${Object.entries(status.inbox).map(([id, s]) => `${id} ${s.unread} (oldest ${s.oldestMinutes} min)`).join(", ")}` : ""}`);
+      out(`${status.mission}: ${left} min left · ${status.members} members · ${status.tickets} tickets · ${Object.entries(statuses).map(([key, v]) => `${key} ${v}`).join(", ") || "none yet"} · ${tokens}${heavy.length ? ` · to clear (idle, context over ${k(context.compactAt)}): ${heavy.join(", ")}` : ""}${effort.switch.length ? ` · effort to switch: ${effort.switch.map((m) => `${m.id} ${m.from}→${m.to} (${m.ticket})`).join(", ")}` : ""}${Object.keys(status.inbox).length ? ` · unread: ${Object.entries(status.inbox).map(([id, s]) => `${id} ${s.unread} (oldest ${s.oldestMinutes} min)`).join(", ")}` : ""}`);
     }
     break;
   }

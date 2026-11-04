@@ -5,6 +5,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { hhmm } from "./board-init.mjs";
+import { EFFORTS } from "./effort.mjs";
 import { normStatus } from "../server/board.mjs";
 
 /** Which status may follow which. "Never skip a status": the flow goes one step at a time, parked ones come back via triage. */
@@ -69,7 +70,8 @@ export function moveTicket(fleet, text, { to, by, now = new Date(), force = fals
   const member = fleet.agents.find((a) => a.id === by);
   if (by !== "owner" && member === undefined) problems.push(`${by} is not a member of the fleet (or "owner")`);
   let next = text;
-  for (const [key, name] of [["owner", "Owner"], ["verifier", "Verifier"], ["decision", "Decision"], ["fix", "Fix"]]) {
+  if (changes.effort !== undefined && !EFFORTS.includes(changes.effort)) problems.push(`effort must be one of ${EFFORTS.join(", ")}, not ${changes.effort}`);
+  for (const [key, name] of [["owner", "Owner"], ["verifier", "Verifier"], ["decision", "Decision"], ["fix", "Fix"], ["effort", "Effort"]]) {
     if (changes[key] !== undefined) next = setField(next, name, changes[key]);
   }
   const owner = names(fieldOf(next, "Owner").replace(/\(proposed\)/i, ""));

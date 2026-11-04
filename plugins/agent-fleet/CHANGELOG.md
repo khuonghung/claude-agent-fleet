@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Members run in Claude Code only again: the runner for other agent CLIs (harness profiles, `fleet run`, `fleet harness`, `fleet halt`, the `onboard-harness` skill) is gone.
+- Auto effort: a member keeps its model, but works each ticket at the effort the ticket needs — its `Effort:` (set with `--effort` on `fleet ticket set`), else its severity around the member's planned effort (critical one step up, high at the plan, medium one down, low two down). `fleet ticket set` says the owner's effort when a ticket is assigned or started; `fleet status` lists the desktop members to switch (`effort.switch`), which the lead's check switches with `set_session_effort` at a ticket's start — with a clear when one is due, since the switch re-writes the member's context to the cache once — and records with `fleet effort <id> <level>`. On by default for new plans (`autoEffort`). A plan may give a member `"model": "auto"` and `"effort": "auto"`: the role's effort and model, Opus at `xhigh` or `max`.
+
 ## 0.9.0 — 2026-11-03
 
 - Discussions read like a conversation with minutes: the protocol and `discuss-and-decide` ask each thread post to open with its point and whom it concerns (`@id`), with the evidence after it, in the mission's language; the opener to end with a recommendation and a default; nobody to act on a point before it is decided; and the `Decision:` line to be a plain sentence of what was chosen and who does what, since the dashboard shows it on the discussion.

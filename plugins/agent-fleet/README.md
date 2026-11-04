@@ -9,7 +9,7 @@ A Claude Code plugin to **plan, launch and watch a fleet of agents**: a team of 
 1. **Goal and scope**: what done means, the repository, the base branch, what is out of bounds.
 2. **Org chart**: a team sized to the goal (lead, product owner, delivery lead, release manager, developers, testers, reviewers…), who reports to whom.
 3. **Specialty**: what each member focuses on and the paths it owns (builders never overlap).
-4. **Model and effort**: suggested per member (Opus + high for hard work, Sonnet + medium for coordination, Haiku + low for mechanical tasks), confirmed by you.
+4. **Model and effort**: suggested per member (Opus + high for hard work, Sonnet + medium for coordination, Haiku + low for mechanical tasks), confirmed by you (or `auto`). The model stays fixed while a member runs; its effort follows each ticket — the ticket's `Effort:`, else its severity — and the lead switches desktop members at a ticket's start.
 5. **Time and budget**: the window, its phases (start-up, build & verify, code freeze, reports), optional per-member windows and an output-token budget.
 6. **Board, briefs and agents** are written to `.fleet/<mission>/` (kept out of git): the protocol and tickets, one brief per member, and **one specialised agent per member**, generated from the plan (its role's duties made specific by its specialty, area, model, effort, window and manager). The **dashboard** opens.
 
