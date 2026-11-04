@@ -85,7 +85,7 @@ function AgentDetail({ s, id, now, onTicket, onDoc }: { s: FleetState; id: strin
           <div>
             <dt>{t("org.model")}</dt>
             <dd>
-              <ModelChip agent={a} t={tele} />
+              <ModelChip agent={a} t={tele} effort={s.efforts?.[a.id]} />
             </dd>
           </div>
           {boss && (

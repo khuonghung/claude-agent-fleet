@@ -570,6 +570,7 @@ h2, h3 { margin: 0; font-weight: 600; }
 .model-chip { display: inline-flex; align-items: baseline; gap: 4px; font: 500 12px var(--font); white-space: nowrap; }
 .model-chip em { font-style: normal; font-weight: 400; color: var(--faint); font-size: 11px; }
 .model-chip.is-off { color: var(--warn); }
+.model-chip em.is-moved { color: var(--gold); font-weight: 500; }
 .kind-tag { margin-left: 6px; font: 500 11px var(--font); text-transform: uppercase; letter-spacing: .05em; color: var(--faint); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
 .stage-title { flex-wrap: wrap; }
 .stage-goal { flex: 1 1 280px; min-width: 0; color: var(--stage-goal); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; }

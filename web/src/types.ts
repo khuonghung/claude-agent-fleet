@@ -273,6 +273,9 @@ export interface FleetState {
   board: Board | null;
   git: GitState | null;
   telemetry: Record<string, Telemetry | null>;
+  /** The effort each member runs at now; with auto effort it follows its ticket. */
+  efforts?: Record<string, string>;
+  autoEffort?: boolean;
   probes: Probe[];
   integration?: IntegrationPlan | null;
   doctor?: Doctor | null;

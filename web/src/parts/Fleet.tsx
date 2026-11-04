@@ -34,15 +34,21 @@ export function Avatar({ agent, kind, size = "md", cheer }: { agent: AgentDef; k
   );
 }
 
-/** "Opus 5.5 · high" as planned; the running model when it differs. */
-export function ModelChip({ agent, t: tele }: { agent: AgentDef; t: Telemetry | null | undefined }) {
+/** "Opus 5.5 · high" as planned; the running model when it differs, and the effort it runs at now when given. */
+export function ModelChip({ agent, t: tele, effort }: { agent: AgentDef; t: Telemetry | null | undefined; effort?: string }) {
   const { t } = useI18n();
   const mismatch = modelMismatch(agent, tele);
   const planned = modelLabel(agent.model);
+  const now = effort ?? agent.effort;
+  const moved = now !== undefined && agent.effort !== undefined && now !== agent.effort;
   return (
     <span className={`model-chip${mismatch ? " is-off" : ""}`} title={mismatch ? t("card.mismatch", mismatch) : agent.model}>
       {mismatch ? `${modelLabel(tele?.model)} ≠ ${planned}` : planned}
-      {agent.effort ? <em>{agent.effort}</em> : null}
+      {now ? (
+        <em className={moved ? "is-moved" : undefined} title={moved ? t("card.effortNow", { now, planned: agent.effort ?? "" }) : undefined}>
+          {now}
+        </em>
+      ) : null}
     </span>
   );
 }
@@ -122,7 +128,7 @@ function AgentCard({ s, agent, now, onOpen }: { s: FleetState; agent: AgentDef; 
         <div>
           <dt>{t("card.model")}</dt>
           <dd>
-            <ModelChip agent={agent} t={tele} />
+            <ModelChip agent={agent} t={tele} effort={s.efforts?.[agent.id]} />
           </dd>
         </div>
       </dl>

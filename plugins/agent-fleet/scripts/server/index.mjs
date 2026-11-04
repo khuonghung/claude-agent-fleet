@@ -7,6 +7,7 @@ import fs from "node:fs";
 import http from "node:http";
 import net from "node:net";
 import path from "node:path";
+import { currentEfforts } from "../lib/effort.mjs";
 import { PLUGIN_ROOT, readFleet } from "../lib/plan.mjs";
 import { readBoard, readBoardDoc } from "./board.mjs";
 import { readGit } from "./git.mjs";
@@ -31,6 +32,7 @@ const planState = () => ({
   mission: cfg.mission,
   budget: cfg.budget ?? {},
   launch: cfg.launch ?? "session",
+  autoEffort: cfg.autoEffort === true,
   squads: cfg.squads,
   agents: cfg.agents.map(({ match, ...a }) => a),
   flow: cfg.board,
@@ -43,6 +45,7 @@ const state = {
   board: null,
   git: null,
   telemetry: {},
+  efforts: {},
   probes: [],
   integration: null,
   doctor: null,
@@ -175,6 +178,15 @@ async function refreshTranscripts() {
     state.telemetry = transcripts.snapshot();
     dirty = true;
   }
+  refreshEfforts();
+}
+
+/** The effort each member runs at now (auto effort: the lead records each switch), beside the planned one. */
+function refreshEfforts() {
+  const efforts = currentEfforts(cfg, path.dirname(cfgFile));
+  if (JSON.stringify(efforts) === JSON.stringify(state.efforts)) return;
+  state.efforts = efforts;
+  dirty = true;
 }
 
 // Board: watch the folder, debounce bursts; also re-read every 20 s in case a watch event is lost.
