@@ -41,8 +41,6 @@ export interface AgentDef {
   model?: string;
   effort?: string;
   launch?: string;
-  /** The agent CLI it runs in: "claude", or the id of a harness profile (then `launch` is "runner"). */
-  harness?: string;
   worktree?: boolean;
   readOnly?: boolean;
   window?: { from: string; to: string };

@@ -28,17 +28,9 @@ export function prefixes(agents) {
   return used;
 }
 
-/** Whether a member runs in another agent CLI than Claude Code, through its runner. */
-const runsElsewhere = (agent) => agent.launch === "runner";
-
-/**
- * A member's skills as a list: the name to load with the Skill tool and when to use it — or, in another CLI that has no
- * Skill tool, the file to read.
- */
+/** A member's skills as a list: the name to load with the Skill tool and when to use it. */
 const skillList = (agent) =>
-  (agent.skills ?? []).length === 0
-    ? "(none)"
-    : agent.skills.map((name) => `- \`${runsElsewhere(agent) ? path.join(PLUGIN_ROOT, "skills", name, "SKILL.md").replaceAll("\\", "/") : `agent-fleet:${name}`}\` — ${(skills[name] ?? "").split(/(?<=\.)\s/).slice(-1)[0]}`).join("\n");
+  (agent.skills ?? []).length === 0 ? "(none)" : agent.skills.map((name) => `- \`agent-fleet:${name}\` — ${(skills[name] ?? "").split(/(?<=\.)\s/).slice(-1)[0]}`).join("\n");
 
 /** A fleet CLI command that finds this fleet's board from any folder (a worktree too). */
 export const cli = (fleet, args) => `node "${path.join(PLUGIN_ROOT, "scripts", "fleet.mjs").replaceAll("\\", "/")}" ${args} --fleet "${path.dirname(fleet.board.dir).replaceAll("\\", "/")}"`;
@@ -54,11 +46,6 @@ const ticketCmd = (fleet, id) => cli(fleet, `ticket set <ID> <status> --by ${id}
 /** The head of a new team channel; posts are appended below it by `fleet say`. */
 export const CHANNEL_HEAD = "# Team channel\n\nShort news for everyone, one line per post, newest at the bottom. Post with `fleet say` (see the protocol), never by editing this file.\n\n";
 
-/** The name of the CLI a member runs in, from its profile. */
-const harnessTitle = (fleet, agent) => fleet.harnesses?.[agent.harness]?.title ?? agent.harness;
-/** A member's model and effort as the roster shows them, with its CLI when it is not Claude Code. */
-const modelCell = (fleet, agent) => (runsElsewhere(agent) ? `${harnessTitle(fleet, agent)}: ${agent.model || "default"} · ${agent.effort}` : `${agent.model} · ${agent.effort}`);
-
 export function briefOf(fleet, agent) {
   const boss = fleet.agents.find((a) => a.id === agent.reportsTo);
   const window = agent.window ?? { from: fleet.mission.startAt, to: fleet.mission.endAt };
@@ -71,13 +58,9 @@ export function briefOf(fleet, agent) {
     reportsLine: boss === undefined ? "" : `You report to **${boss.id}** (${boss.title}).`,
     from: when(window.from),
     to: when(window.to),
-    model: runsElsewhere(agent) ? `${harnessTitle(fleet, agent)} with ${agent.model || "its default model"}` : agent.model,
+    model: agent.model,
     effort: agent.effort,
     boardDir: fleet.board.dir.replaceAll("\\", "/"),
-    harnessNote: runsElsewhere(agent)
-      ? `\nYou run in **${harnessTitle(fleet, agent)}**, not Claude Code, driven turn by turn by the fleet's runner: there is no Skill tool, SendMessage or Monitor here. When nothing is left for you to do now, end your turn — never wait or sleep in a loop: the runner wakes you, with your unread messages and open tickets, when your inbox, a ticket of yours, a thread or a channel post that names you changes. To reach a teammate, write in the ticket or thread, then put a line in their inbox with \`${sendCmd(fleet, agent.id)}\`: where the protocol says SendMessage, that is your doorbell. ${agent.worktree ? "The runner made your worktree and branch and works in them." : "You work in the main checkout."}\n`
-      : "",
-    skillsIntro: runsElsewhere(agent) ? "Read the file when the work calls for it; each holds the team's way of doing it." : "Load these with the Skill tool when the work calls for them; they hold the team's way of doing it.",
     duties: agent.duties || "(see the protocol)",
     specialty: agent.specialty || "(none beyond your role)",
     owns: agent.owns.length > 0 ? agent.owns.map((p) => `- \`${p}\``).join("\n") : agent.readOnly ? "You read; you do not change product code." : "(agree it with the delivery lead before you change files)",
@@ -110,7 +93,7 @@ export function writeBoard(fleet, { makeCurrent = true } = {}) {
   const roster = [
     "| Member | Role | Squad | Reports to | Model · effort | Owns | Ticket prefix |",
     "|---|---|---|---|---|---|---|",
-    ...fleet.agents.map((a) => `| ${a.id} | ${a.title} | ${a.squad} | ${a.reportsTo ?? "—"} | ${modelCell(fleet, a)} | ${a.owns.map((p) => `\`${p}\``).join(", ") || "—"} | ${pre.get(a.id)} |`),
+    ...fleet.agents.map((a) => `| ${a.id} | ${a.title} | ${a.squad} | ${a.reportsTo ?? "—"} | ${a.model} · ${a.effort} | ${a.owns.map((p) => `\`${p}\``).join(", ") || "—"} | ${pre.get(a.id)} |`),
   ].join("\n");
   const timeline = ["| Phase | From | To |", "|---|---|---|", ...fleet.mission.phases.map((p) => `| ${p.name} | ${when(p.from)} | ${when(p.to)} |`)].join("\n");
   const hours = Math.round(((Date.parse(fleet.mission.endAt) - Date.parse(fleet.mission.startAt)) / 3_600_000) * 10) / 10;
@@ -240,7 +223,6 @@ export function launchPlan(fleet) {
   return fleet.agents.map((a) => ({
     id: a.id,
     launch: a.launch,
-    ...(a.launch === "runner" ? { harness: a.harness, harnessTitle: harnessTitle(fleet, a) } : {}),
     title: a.match.title,
     description: a.match.description,
     subagentType: agentNameOf(fleet, a),

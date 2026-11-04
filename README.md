@@ -167,9 +167,6 @@ The plugin ships **14 skills** — the team's playbooks, written for the board p
 | `session` | separate Claude desktop sessions (builders in their own git worktrees) | long runs you can open, steer and stop one by one |
 | `subagent` | background subagents of the lead session | no desktop app; shorter runs |
 | `headless` | `claude -p` processes started by the CLI | servers and CI; set a permission mode up front |
-| `runner` | another agent CLI — Codex CLI, Copilot CLI, Gemini CLI or any other — driven turn by turn by the fleet's runner | a second vendor's model for a reviewer, or volume work on a plan you already pay for |
-
-**Other agent CLIs.** `/agent-fleet:new` asks whether you have a harness besides Claude Code. None is built in: the `onboard-harness` skill researches the one you name (its help, its docs, its session files) and writes a small profile, `.fleet/harnesses/<id>.json`, that says how to run one turn of it unattended, resume it, pass the model and effort, reach the board and read its output tokens. `fleet harness check <id> --live` then proves the profile with two short turns before any member relies on it. The plugin ships unproven starting points for Codex CLI, Copilot CLI and Gemini CLI. A member in such a CLI has no Skill tool or SendMessage: it reads skills as files, rings teammates through their inbox (`fleet send`), and its runner wakes it when its inbox, its tickets, a thread or a channel post that names it changes. Its turns are recorded for the dashboard and the token limit.
 
 ### Models, effort and tokens
 

@@ -13,14 +13,14 @@ A Claude Code plugin to **plan, launch and watch a fleet of agents**: a team of 
 5. **Time and budget**: the window, its phases (start-up, build & verify, code freeze, reports), optional per-member windows and an output-token budget.
 6. **Board, briefs and agents** are written to `.fleet/<mission>/` (kept out of git): the protocol and tickets, one brief per member, and **one specialised agent per member**, generated from the plan (its role's duties made specific by its specialty, area, model, effort, window and manager). The **dashboard** opens.
 
-Then `/agent-fleet:launch` starts every member with its brief, model and effort — as desktop sessions, background subagents, headless `claude -p` processes, or in another agent CLI (Codex CLI, Copilot CLI, …) through a runner — and the dashboard follows them.
+Then `/agent-fleet:launch` starts every member with its brief, model and effort — as desktop sessions, background subagents, or headless `claude -p` processes — and the dashboard follows them.
 
 ## Commands
 
 | Command | What it does |
 |---|---|
 | `/agent-fleet:new [goal]` | Plans a fleet with you and writes its board, briefs and `fleet.json` |
-| `/agent-fleet:launch [members]` | Starts the members (sessions, subagents, headless or runners) and the dashboard |
+| `/agent-fleet:launch [members]` | Starts the members (sessions, subagents or headless) and the dashboard |
 | `/agent-fleet:add [who]` | Adds a member to the running fleet and launches it; everyone else keeps working |
 | `/agent-fleet:extend [time]` | Moves the fleet's end later: phases, windows and briefs updated, the team told |
 | `/agent-fleet:dashboard` | Starts or finds the dashboard and gives its URL |
@@ -46,7 +46,6 @@ Playbooks for the team's work, written for the fleet's board protocol. Each memb
 | `agent-fleet:discuss-and-decide` | lead, product owner, delivery lead, architect, researcher | a written discussion in a thread: options and a recommendation, structured answers by a deadline, one owner decides, disagree and commit |
 | `agent-fleet:swarm-ticket` | delivery lead, architect, builders, testers, reviewers | one ticket, several members: split behind a contract, builder + tester, driver + navigator, parallel investigation, multi-reviewer; one owner accountable |
 | `agent-fleet:investigate-bug` | builders, testers, researchers | root cause before fix; four phases; three failed fixes → rethink; competing hypotheses across members with evidence and arbitration |
-| `agent-fleet:onboard-harness` | lead | another agent CLI (Codex, Copilot, Gemini, …) for members: ask the user, research how it runs unattended, write its profile, prove it with a live check |
 | `agent-fleet:respond-to-review` | builders, writers | verify findings against the code, clarify first, push back with evidence, fix one at a time, answer per item |
 
 ### Working together
