@@ -1,9 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.10.0 — 2026-11-04
 
 - Members run in Claude Code only again: the runner for other agent CLIs (harness profiles, `fleet run`, `fleet harness`, `fleet halt`, the `onboard-harness` skill) is gone.
 - Auto effort: a member keeps its model, but works each ticket at the effort the ticket needs — its `Effort:` (set with `--effort` on `fleet ticket set`), else its severity around the member's planned effort (critical one step up, high at the plan, medium one down, low two down). `fleet ticket set` says the owner's effort when a ticket is assigned or started; `fleet status` lists the desktop members to switch (`effort.switch`), which the lead's check switches with `set_session_effort` at a ticket's start — with a clear when one is due, since the switch re-writes the member's context to the cache once — and records with `fleet effort <id> <level>`. On by default for new plans (`autoEffort`). A plan may give a member `"model": "auto"` and `"effort": "auto"`: the role's effort and model, Opus at `xhigh` or `max`.
+- The dashboard shows the effort each member runs at now, on its card and in its drawer: in gold, with the planned one on hover, when auto effort moved it. The org chart keeps the plan.
 
 ## 0.9.0 — 2026-11-03
 

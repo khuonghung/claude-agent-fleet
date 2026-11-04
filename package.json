@@ -1,6 +1,6 @@
 {
   "name": "claude-agent-fleet",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "private": true,
   "description": "A Claude Code plugin to plan, launch and watch a fleet of coding agents: goal, org chart, per-agent model and effort, time budget, and a live dashboard.",
   "type": "module",
